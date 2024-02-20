@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2147a51df7336254c948debf11857c52
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - canvasKeyboard: {instanceID: 0}
+  - alphaBoardUnsfhifted: {instanceID: 0}
+  - alphaBoardSfhifted: {instanceID: 0}
+  - numberBoardUnshifted: {instanceID: 0}
+  - numberBoardShifted: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
