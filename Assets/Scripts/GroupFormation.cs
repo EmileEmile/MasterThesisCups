@@ -35,7 +35,6 @@ public class GroupFormation : MonoBehaviour {
 
     public GameObject coffeeTable;
     public GameObject tableMug;
-    public GameObject handMug;
     public GameObject trialHintsCanvas;
 
     /*center of the group distance from the center of the coffee table (radiusZ)! The coffee cup is located at the center of the table
@@ -182,19 +181,17 @@ public class GroupFormation : MonoBehaviour {
 
         
 
-        /*endMessageWindow.SetActive(false);
+        endMessageWindow.SetActive(false);
         startGameFlag = false;
         
-        handMug.SetActive(false);
         trialHintsCanvas.SetActive(true);
-        tableMug.SetActive(true);
 
         //display demo slider on data collection canvas only during demo
         if (demo) 
         {
             demoSlider.SetActive(true);
             demoSliderLabel.SetActive(true);
-        }*/
+        }
     }
 
     //Register user profile data into the CSV file (will be called from "Register" button of the UI after receiving all the user profile data)
@@ -290,7 +287,7 @@ public class GroupFormation : MonoBehaviour {
         agents[0].GetComponent<HeadLookController>().targetObject = agentsGaze[0].transform;
         agents[1].GetComponent<HeadLookController>().targetObject = agentsGaze[1].transform;
 
-        /*if (startGameFlag)
+        if (startGameFlag)
         {
             //Obtain joining points (first and final) to the group
             if (Walking.captureTrajectoryFlag)
@@ -313,7 +310,6 @@ public class GroupFormation : MonoBehaviour {
                     pointer.SetActive(true); //enable left controller pointer
                     tableMug.SetActive(false); //hide the mug on the table
                     trialHintsCanvas.SetActive(false); // hide trial hints canvas
-                    handMug.SetActive(true); //show the mug in the right hand
                     collisionDetection.cupGrabbedFlag = false; //set the cup grabbed flag of the collision script to false
                     questionnaireObject.SetActive(true);
 
@@ -335,7 +331,7 @@ public class GroupFormation : MonoBehaviour {
 
                 endTrialOnTriggerPress.SetActive(false);
             }
-        }*/
+        }
     }
 
     private void AssignJoiningPoints()
@@ -890,7 +886,6 @@ public class GroupFormation : MonoBehaviour {
         questionnaireObject.SetActive(false);
         tableMug.SetActive(true); //show the mug on the table
         trialHintsCanvas.SetActive(true); // show trial hints canvas
-        handMug.SetActive(false); //show the mug in the right hand
         if (trialId != 18) pointer.SetActive(false);
             
         //reload the next trial
