@@ -12,13 +12,15 @@ namespace TalesFromTheRift
 		public GameObject inputObject;
 
 		public void OpenKeyboard() 
-		{		
-			CanvasKeyboard.Open(CanvasKeyboardObject, inputObject != null ? inputObject : gameObject);
-		}
+		{
+			Debug.Log("Keyboard open");
+            CanvasKeyboard.Open(CanvasKeyboardObject, inputObject != null ? inputObject : gameObject);
+        }
 
 		public void CloseKeyboard() 
-		{		
-			CanvasKeyboard.Close ();
+		{
+            Debug.Log("Keyboard close");
+            CanvasKeyboard.Close ();
 		}
 	}
 }
