@@ -7,14 +7,14 @@ using TMPro;
 
 public class GroupFormation : MonoBehaviour {
     bool flag, flag2, flag3 = true;
+
+    [Header("Agent Info")]
     // Instantiates prefabs in a circle formation
     public GameObject[] agents;
 
-    // Instantiates prefabs in a circle formation
-    public GameObject[] agentsGaze;
+    public GameObject[] TrialAgents;
 
-    // Pillars in front of the coffee table
-    public GameObject[] pillars;
+    public GameObject[] agentsGaze;
 
     public GameObject speakerAgentHeadObject; // center of the group or speaking agent
     public GameObject avatarHeadObject; // avatar's head cube
@@ -29,49 +29,29 @@ public class GroupFormation : MonoBehaviour {
         AgentsDistance in programming = AgentsDistance in the VE / 2  + 0.20
         AgentsDistance in programming= { 0.40f, 0.55f, 0.7f, 0.85f  };
       ;*/
-    float[] AgentsDistance = { 0.4f, 0.55f, 0.7f, 0.85f };
+    //float[] AgentsDistance = { 0.4f, 0.55f, 0.7f, 0.85f };
 
     public GameObject invisibleGroupCenterWallObject;
 
-    public GameObject coffeeTable;
+    //public GameObject coffeeTable;
     public GameObject tableMug;
+    public GameObject trialTableMug;
     public GameObject trialHintsCanvas;
 
-    /*center of the group distance from the center of the coffee table (radiusZ)! The coffee cup is located at the center of the table
-      NOTE: roughly 45 cm will be used by the table and agent's body. Therefore, the distance between edges of agents' bodies and the table will be calculated as follow:
-      CoffeeTableDistance in programming = { 0.85f, 1.45f, 2.05f, 3.45f };
-      CoffeeTableDistance in programming = CoffeeTableDistance in the VE + 0.45
-      CoffeeTableDistance in the VE edge to edge = { 0.4f, 1.0f, 1.6f, 3.0f };
-      Position Z of the Table is the distance of the table from the group (forward/backward direction)*/
-    float[] CoffeeTableDistance = { -0.85f, -1.45f, -2.05f, -3.45f };
-
-
-    public float[] angle = { 0f, 90f, 180f };
     //bool playBack = true;
 
     //public static Collider colObject;
     //public static bool avatarCollision;
 
-    int invisibleAgentId1 = -1;
-    int invisibleAgentId2 = -1;
     int mainAgentId; // ID of the centeral agent for the experiment
     int lateralAgent1Id; // ID of the lateral agent 1
-    int lateralAgent2Id; // ID of the lateral agent 2
 
-    /* agents 0 .. 3 --> female
-     * agents 4 .. 7 --> male
-     * agentGender = 4 if the playerGender = male to generate male agents
+    /* agents 0 .. 1 --> female
+     * agents 2 .. 3 --> male
+     * agentGender = 2 if the playerGender = male to generate male agents
      * agentGenr = 0 if the playerGender = female to generate female agents
      */
     int agentsGender = 0;
-
-    //avatar parameters
-    public Transform avatarPosition;
-    public Vector3 avatarInitPos;
-    public Vector3 avatarInitRot;
-
-    //trial and end message canvases spawn position
-    public Vector3 trialCanvasPos;
 
     //experiment parameters
     public bool demo;
@@ -83,8 +63,9 @@ public class GroupFormation : MonoBehaviour {
     [Range(0, 3)]
     int latinSquareRowToFetch;
 
+
     int trialId = 0;
-    public TMP_Text trialIdTextBox; //the text box to show the trial id
+
     List<string> ExpeConditions; //list of all trial of the experiment provided by latin square method (each value is a string that contains several variables' values: table and group distance, gaze,... check latin square help file for details)
     /*
         *
@@ -106,23 +87,19 @@ public class GroupFormation : MonoBehaviour {
     int trialAgentsDistanceID = 0;
     int trialConversationID = 0;
     int trialGazeID = 0;
-    int trialEmbodiementID = 0;
     int trialBehaviorID = 0;
-
-
-    //joining points to the group
-    private string firstJoin = "";
-    private string finalJoin = "";
-    //if true then shows that the user is convinced to join the far point
-    private bool joinFar = false;
+    
 
     //CSV files parameters
     private StreamWriter SWexpe;
     private StreamWriter SWtrajectory;
 
-    
+    [Header("Hints Window")]
     public GameObject hintsWindow;
+    public TMP_Text trialIdTextBox; //the text box to show the trial id
+    [Space(20)]
 
+    [Header("User Data Entry")]
     //User profile data entry fields
     public GameObject dataEntry;
     public Button playerId; //the user who is palying with the avatar
@@ -133,56 +110,57 @@ public class GroupFormation : MonoBehaviour {
     public TMP_Dropdown playerHandedness;
     public TMP_Dropdown playerEnglishLevel;
     public TMP_Dropdown playerArtificialSysKnow;
+    //canvas elements to be active only during the demo
+    public GameObject demoSlider = null;
+    public GameObject demoSliderLabel = null;
 
+    [Space(20)]
+
+
+    [Header("Questoinaire Data")]
     //Questionnaire data entry fields
     public GameObject questionnaireObject;
     public Slider ClarityValue;
     public Slider FaceLossValue;
     public Slider PositiveFaceValue;
     public Slider NegativeFaceValue;
-
+    public Button playerComments;
+    [Space(20)]
 
     //User End message field to save their comments
     public GameObject endMessageWindow;
-    public Button playerComments;
 
-    bool startGameFlag = false;
+
+    public bool gameStartedFlag = false;
 
     //"flag" to manage right trigger press to end the trial, and enable it only when "collisionDetection.cupGrabbedFlag = true". it means when the right controller collided with the coffee cup on the table.
     public GameObject endTrialOnTriggerPress = null;
-    
-    //left controller pointer
-    public GameObject pointer = null;
 
     //marker on spawn position
     public GameObject spawnMarker = null;
 
-    //canvas elements to be active only during the demo
-    public GameObject demoSlider = null;
-    public GameObject demoSliderLabel = null;
-
     //private int collisionThreshold;
+
+    private CapsuleCollider myCollider;
 
     // Use this for initialization
     private void Start () {
+        myCollider = transform.GetComponent<CapsuleCollider>();
 
-        agents[0].GetComponent<HeadLookController>().targetObject = agentsGaze[0].transform;
         agents[2].GetComponent<HeadLookController>().targetObject = agentsGaze[2].transform;
         agents[3].GetComponent<HeadLookController>().targetObject = agentsGaze[3].transform;
-        agents[4].GetComponent<HeadLookController>().targetObject = agentsGaze[4].transform;
-        agents[5].GetComponent<HeadLookController>().targetObject = agentsGaze[5].transform;
-        agents[6].GetComponent<HeadLookController>().targetObject = agentsGaze[6].transform;
-        agents[7].GetComponent<HeadLookController>().targetObject = agentsGaze[7].transform;
+  
 
 
         //look at the participant
         agents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
         agents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        TrialAgents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        TrialAgents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
 
-        
+
 
         endMessageWindow.SetActive(false);
-        startGameFlag = false;
         
         trialHintsCanvas.SetActive(true);
 
@@ -191,6 +169,12 @@ public class GroupFormation : MonoBehaviour {
         {
             demoSlider.SetActive(true);
             demoSliderLabel.SetActive(true);
+            tableMug.SetActive(false);
+        }
+        else
+        {
+            dataEntry.SetActive(false);
+            trialTableMug.SetActive(false);
         }
     }
 
@@ -203,10 +187,14 @@ public class GroupFormation : MonoBehaviour {
         OpenCSVFiles();
 
         //start the game
-        if (startGameFlag)
+        if (gameStartedFlag)
         {
             dataEntry.SetActive(false);
-            pointer.SetActive(false); //deactivate left controller pointer
+            //TODO hide pointers
+            TrialAgents[0].SetActive(false);
+            TrialAgents[1].SetActive(false);
+            tableMug.SetActive(true);
+            trialTableMug.SetActive(false);
             StartGame();
         }
         //Debug.Log("");
@@ -226,16 +214,6 @@ public class GroupFormation : MonoBehaviour {
     // Update is called once per frame
     private void Update()
     {
-        agents[2].GetComponent<HeadLookController>().targetObject = agentsGaze[2].transform;
-        agents[3].GetComponent<HeadLookController>().targetObject = agentsGaze[3].transform;
-        agents[4].GetComponent<HeadLookController>().targetObject = agentsGaze[4].transform;
-        agents[5].GetComponent<HeadLookController>().targetObject = agentsGaze[5].transform;
-        agents[6].GetComponent<HeadLookController>().targetObject = agentsGaze[6].transform;
-        agents[7].GetComponent<HeadLookController>().targetObject = agentsGaze[7].transform;
-
-
-       
-
         if (flag)
         {
             //look at the participant
@@ -284,30 +262,18 @@ public class GroupFormation : MonoBehaviour {
             flag3 = false;
         }
 
-        agents[0].GetComponent<HeadLookController>().targetObject = agentsGaze[0].transform;
-        agents[1].GetComponent<HeadLookController>().targetObject = agentsGaze[1].transform;
-
-        if (startGameFlag)
+        if (gameStartedFlag)
         {
-            //Obtain joining points (first and final) to the group
-            if (Walking.captureTrajectoryFlag)
-                AssignJoiningPoints();
-
-            //if the right controller's collider does not collide with the coffee cup on the table (user does not grab it), the right trigger "flag" cannot be activated
-            //collisionDetection collisionScript = tableMug.GetComponent<collisionDetection>();
-            if (!collisionDetection.cupGrabbedFlag) endTrialOnTriggerPress.SetActive(false);
-            Debug.Log("collisionScript.cupGrabbedFlag = " + collisionDetection.cupGrabbedFlag.ToString());
-            
             //trial end
             if (endTrialOnTriggerPress.activeSelf)
             {
+                Debug.Log("Trial over");
                 //set the flag to false in order to stop capturing the user trajectory
                 Walking.captureTrajectoryFlag = false;
 
                 //show trial questionnaire to the user
                 if (!demo)
                 {
-                    pointer.SetActive(true); //enable left controller pointer
                     tableMug.SetActive(false); //hide the mug on the table
                     trialHintsCanvas.SetActive(false); // hide trial hints canvas
                     collisionDetection.cupGrabbedFlag = false; //set the cup grabbed flag of the collision script to false
@@ -331,26 +297,6 @@ public class GroupFormation : MonoBehaviour {
 
                 endTrialOnTriggerPress.SetActive(false);
             }
-        }
-    }
-
-    private void AssignJoiningPoints()
-    {
-        string jnPnt = FindJoiningPoint.joiningPoint;
-        Debug.Log("joining point:" + jnPnt);
-
-        if (firstJoin == "" && jnPnt != "")
-        {
-            finalJoin = firstJoin = jnPnt;
-
-            //removed showLeft
-        }
-
-        if (jnPnt != "")
-        {
-            finalJoin = jnPnt;
-
-            //removed showLeft
         }
     }
 
@@ -384,37 +330,20 @@ public class GroupFormation : MonoBehaviour {
         else
         {
             //Game Over!
-            startGameFlag = false;
+            gameStartedFlag = false;
             endMessageWindow.SetActive(true);
             CloseCSVFiles();
             return;
         }
 
+        //set the agent's roles, position, orientation        
+        AgentsGroupConfiguration();
 
-        avatarPosition.localPosition = avatarInitPos;
-        Quaternion rot = Quaternion.Euler(avatarInitRot);
-        avatarPosition.localRotation = rot;
-
-
-        //set the embodiement of the agents (Agent == 2 or Cylinders == 1)
-        if (trialEmbodiementID == 1)
-        {
-            PillarsGroupConfiguration();
-        }
-        else if (trialEmbodiementID == 2)
-        {
-            //set the agent's roles, position, orientation        
-            AgentsGroupConfiguration();
-
-            /* Set the Agents attention 
-             * trialGazeID == 2 --> agents look at each other (attentionID = 2)
-             * trialGazeID == 3 --> agents first look at the user (attentionID = 3), then to each other during conversation (attentionID = 2), and if user crosses the o-space again to the user (attentionID = 3)
-             */
-            SetAgentsAttention(trialGazeID);
-        }
-
-        //set the position of the coffee table (its distance from the group). This also could be set based on the codition ID from the Latin Square Matrix
-        coffeeTable.transform.localPosition = new Vector3(coffeeTable.transform.localPosition.x, coffeeTable.transform.localPosition.y, CoffeeTableDistance[2]);
+        /* Set the Agents attention 
+            * trialGazeID == 2 --> agents look at each other (attentionID = 2)
+            * trialGazeID == 3 --> agents first look at the user (attentionID = 3), then to each other during conversation (attentionID = 2), and if user crosses the o-space again to the user (attentionID = 3)
+            */
+        SetAgentsAttention(trialGazeID);
 
 
         //start the conversation
@@ -432,10 +361,6 @@ public class GroupFormation : MonoBehaviour {
                 StartCoroutine(DelayedConversation(3.8f));
             }
         }
-
-        //set the joining point of the avatar to the group to an Empty string
-        FindJoiningPoint.joiningPoint = "";
-        firstJoin = finalJoin = "";
 
         //set the flag to true in order to start capturing the user trajectory
         Walking.captureTrajectoryFlag = true;
@@ -462,7 +387,6 @@ public class GroupFormation : MonoBehaviour {
             int.TryParse(trialStr[0].ToString(), out trialAgentsDistanceID);
             int.TryParse(trialStr[1].ToString(), out trialConversationID);
             int.TryParse(trialStr[2].ToString(), out trialGazeID); 
-            int.TryParse(trialStr[3].ToString(), out trialEmbodiementID); 
             int.TryParse(trialStr[4].ToString(), out trialBehaviorID);
         }
         catch (System.Exception e)
@@ -486,49 +410,31 @@ public class GroupFormation : MonoBehaviour {
          */
         if (playerGender.options[playerGender.value].text == "Male")
         {
-            agentsGender = 4;
+            Debug.Log("Male");
+            agentsGender = 2;
             //make female agents invisible
             agents[0].transform.position = new Vector3(4, 0, -7);
             agents[1].transform.position = new Vector3(4, 0, -7);
-            agents[2].transform.position = new Vector3(4, 0, -7);
-            agents[3].transform.position = new Vector3(4, 0, -7);
         }
         else
         {
+            Debug.Log("feMale");
             agentsGender = 0;
             //make male agents invisible
-            agents[4].transform.position = new Vector3(4, 0, -7);
-            agents[5].transform.position = new Vector3(4, 0, -7);
-            agents[6].transform.position = new Vector3(4, 0, -7);
-            agents[7].transform.position = new Vector3(4, 0, -7);
+            agents[2].transform.position = new Vector3(4, 0, -7);
+            agents[3].transform.position = new Vector3(4, 0, -7);
         }
 
+        mainAgentId = Random.Range(0, 2);
 
-        invisibleAgentId1 = Random.Range(0, 4);
-
-        int value = Random.Range(0, 4);
-        while (value == invisibleAgentId1)
-            value = Random.Range(0, 4);
-        mainAgentId = value;
-
-        value = Random.Range(0, 4);
-        while (value == invisibleAgentId1 || value == mainAgentId)
-            value = Random.Range(0, 4);
-        lateralAgent1Id = value;
-
-        value = Random.Range(0, 4);
-        while (value == invisibleAgentId1 || value == mainAgentId || value == lateralAgent1Id)
-            value = Random.Range(0, 4);
-        invisibleAgentId2 = value;
+        lateralAgent1Id = 1 - mainAgentId;
 
         mainAgentId += agentsGender; //in order to apply to male or female agents
         lateralAgent1Id += agentsGender; //in order to apply to male or female agents
-        invisibleAgentId1 += agentsGender; //in order to apply to male or female agents
-        invisibleAgentId2 += agentsGender; //in order to apply to male or female agents
 
         //activate agents 
-        agents[mainAgentId].SetActive(true);
-        agents[lateralAgent1Id].SetActive(true);
+        //agents[mainAgentId].SetActive(true);
+        //agents[lateralAgent1Id].SetActive(true);
 
         //Debug.Log("lateral 1: " + lateralAgent1Id.ToString() + ", Lateral 2: " + lateralAgent2Id.ToString());
     }
@@ -536,10 +442,6 @@ public class GroupFormation : MonoBehaviour {
     //configure group of agents parameters in a face-to-face formation for group of two agents
     private void AgentsGroupConfiguration()
     {
-        //hide pillars in front of the coffee table
-        pillars[0].SetActive(false);
-        pillars[1].SetActive(false);
-
         AssignAgentRoles();
         //hide one extra agent
         /* with Greata it was not possible to deactivate the agent, 
@@ -547,14 +449,9 @@ public class GroupFormation : MonoBehaviour {
             * I was receving the previous dialogue from the recently activated agent! 
             * so instead I changed the X and Z axis of the extra agent to 4, -7 in order to make it inivisble!
         */
-        agents[invisibleAgentId1].SetActive(false);
-        agents[invisibleAgentId2].SetActive(false);
-
-        agents[invisibleAgentId1].transform.position = new Vector3(4, 0, -7);
-        agents[invisibleAgentId2].transform.position = new Vector3(4, 0, -7);
 
         // set the position and orientation of 2 avtive agents
-        for (int i = 0; i < 2; i++)
+        /*for (int i = 0; i < 2; i++)
         {
             float x;
 
@@ -576,16 +473,17 @@ public class GroupFormation : MonoBehaviour {
                 agents[mainAgentId].transform.LookAt(transform.position);
                 //Debug.Log("main agent: " + mainAgentId);
             }
-        }
+        } */
 
 
         // set the length of the "invisible group center wall object"
         //invisible group center wall object = AgentsDistance from the center of the group * 2 + 0.2 (size of the other half of the agents body)
-        float ScaleX = AgentsDistance[trialAgentsDistanceID - 1] * 2 + 0.2f;
+        /*float ScaleX = AgentsDistance[trialAgentsDistanceID - 1] * 2 + 0.2f;
         invisibleGroupCenterWallObject.transform.localScale = new Vector3(ScaleX, 8, 0.3f);
+        */
 
         //enable the group collider to be able to detect participant's distance less than 1.5 meters (radius of the capsule collider) from the group center
-        CapsuleCollider myCollider = transform.GetComponent<CapsuleCollider>();
+
         myCollider.enabled = true;
         //set the group P-Space radius
         /* Since the AgentsDistance in programming = AgentsDistance in the VE / 2  + 0.20 
@@ -638,41 +536,6 @@ public class GroupFormation : MonoBehaviour {
             StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/Rest"));
             StartCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/Rest"));
         }
-    }
-
-    //configure group of two pillars parameters in front of the coffee table
-    private void PillarsGroupConfiguration()
-    {
-        //hide all the Greta Agents
-        for (int i = 0; i < 8; i++)
-            agents[i].SetActive(false);
-
-        //disable the colliders of the group of agents
-        CapsuleCollider myCollider = transform.GetComponent<CapsuleCollider>();
-        myCollider.enabled = false;
-
-
-        // set the position of 2 pillars
-        for (int i = 0; i < 2; i++)
-        {
-            float x;
-
-            //set the distance between agents based on the trialStr[0] from the Latin Square martrix
-            x = Mathf.Cos((180.0f + angle[i]) * Mathf.PI / 180.0f) * AgentsDistance[trialAgentsDistanceID - 1];
-            Vector3 pos = transform.position + new Vector3(x, 0, 0);
-
-            //Debug.Log("pos - i: "+pos);
-
-            pillars[i].transform.position = pos;
-            pillars[lateralAgent1Id].transform.LookAt(transform.position);
-            pillars[i].SetActive(true);
-            //Debug.Log("lateral agent: " + lateralAgent1Id);
-        }
-
-        // set the length of the "invisible group center wall object"
-        //invisible group center wall object = AgentsDistance from the center of the group * 2 + 0.2 (size of the other half of the agents body) * 2
-        float ScaleX = AgentsDistance[trialAgentsDistanceID - 1] * 2 + 0.4f;
-        invisibleGroupCenterWallObject.transform.localScale = new Vector3(ScaleX, 8, 0.3f);
     }
 
     private IEnumerator StartDiscussion(int agentNo, float sec, string command)
@@ -728,7 +591,7 @@ public class GroupFormation : MonoBehaviour {
     //open a CSV file for the Experiment
     private void OpenCSVFiles()
     {
-        //Debug.Log("playerGender.value: " + playerGender.value);
+        Debug.Log("playerGender.value: " + playerGender.value);
         
         if (playerId.GetComponentInChildren<TextMeshProUGUI>().text != "") 
         {
@@ -749,7 +612,7 @@ public class GroupFormation : MonoBehaviour {
             //create a header for the user results 
             SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,JOIN 1,FINAL JOIN,FAR,CLARITY,FACE LOSS,POSITIVE FACE,NEGATIVE FACE");
                 
-            startGameFlag = true;
+            gameStartedFlag = true;
         }
     }
 
@@ -863,7 +726,7 @@ public class GroupFormation : MonoBehaviour {
         Debug.Log("changeMindValue" + changeMindValue.value);*/
 
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + firstJoin + "," + finalJoin + "," + joinFar + "," + ClarityValue.value + "," + FaceLossValue.value + "," + PositiveFaceValue.value + "," + NegativeFaceValue.value);
+        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + "No Join" + "," + "No Join" + "," + "No Join" + "," + ClarityValue.value + "," + FaceLossValue.value + "," + PositiveFaceValue.value + "," + NegativeFaceValue.value);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -886,7 +749,7 @@ public class GroupFormation : MonoBehaviour {
         questionnaireObject.SetActive(false);
         tableMug.SetActive(true); //show the mug on the table
         trialHintsCanvas.SetActive(true); // show trial hints canvas
-        if (trialId != 18) pointer.SetActive(false);
+        //if (trialId != 18) pointer.SetActive(false);
             
         //reload the next trial
         Initialization();

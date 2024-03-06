@@ -3,11 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Walking : MonoBehaviour {
-    //public float Speed = 1f;
-    public float speed = 6.0F;
-    public float jumpSpeed = 8.0F;
-    public float gravity = 20.0F;
-    public float rotateSpeed = 2.0F;
     private Vector3 moveDirection = Vector3.zero;
 
     //Trajectory variables to save the path user follows to join the group
@@ -36,23 +31,6 @@ public class Walking : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        //transform.Translate(Speed * Input.GetAxis("Horizontal") * Time.deltaTime, 0f, Speed * Input.GetAxis("Vertical") * Time.deltaTime);
-        CharacterController controller = GetComponent<CharacterController>();
-        if (controller.isGrounded)
-        {
-            moveDirection = new Vector3(0, 0, Input.GetAxis("Vertical"));
-            moveDirection = transform.TransformDirection(moveDirection);
-            moveDirection *= speed;
-            if (Input.GetButton("Jump"))
-                moveDirection.y = jumpSpeed;
-
-        }
-        moveDirection.y -= gravity * Time.deltaTime;
-        controller.Move(moveDirection * Time.deltaTime);
-
-        //Rotate Player
-        transform.Rotate(0, Input.GetAxis("Horizontal") * rotateSpeed, 0);
-
         //save the user trajectory information if it should capture the user trajcotry
         if (captureTrajectoryFlag)
             SavePlayerTrajectory();

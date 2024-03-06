@@ -15,6 +15,7 @@ public class ControllerPickup : MonoBehaviour
     private Quaternion snapStartRotation;
     private float snapTime;
 
+    public GameObject trialFinishedFlag;
 
     public void PickupObject(Transform otherTransform)
     {
@@ -65,6 +66,8 @@ public class ControllerPickup : MonoBehaviour
                 pickupTransform = null;
 
                 handRenderer.forceRenderingOff = false;
+
+                trialFinishedFlag.SetActive(true);
             }
         }
     }

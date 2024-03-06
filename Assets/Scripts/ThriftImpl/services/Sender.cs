@@ -48,7 +48,7 @@ namespace thrift.services
 					}
 				}
 			} catch (Exception ex) {
-				Debug.LogError("Exception " + ex.Message);
+				Debug.LogWarning("Exception " + ex.Message);
 			}
 		}
     
