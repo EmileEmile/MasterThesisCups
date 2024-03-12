@@ -6,15 +6,33 @@ using System.IO;
 using TMPro;
 
 public class GroupFormation : MonoBehaviour {
-    bool flag, flag2, flag3 = true;
+    private static int NO_CONVERSATION = 0;
+    private static int FRIENDLY_CONVERSATION = 1;
+    private static int NEUTRAL_CONVERSATION = 2;
+    private static int UNFRIENDLY_CONVERSATION = 3;
+
+    private static int NO_GAZE = 0;
+    private static int USER_GAZE = 1;
+    private static int A_U_A_GAZE = 3;
+    private static int OTHER_AGENT_GAZE = 2;
+
+    private static int IGNORE_PB = 0;
+    private static int ACKNOWLEDGE_FRIENDLY_PB = 1;
+    private static int ACKNOWLEDGE_UNFRIENDLY_PB = 3;
+
+    private static int IGNORE_VERBAL = 0;
+    private static int ACKNOWLEDGE_FRIENDLY_VERBAL = 1;
+    private static int ACKNOWLEDGE_UNFRIENDLY_VERBAL = 3;
+
+    public bool flag = false;
+    public bool flagAcknowledgeFriendly = false;
+    public bool flagAcknowledgeUnfriendly = false;
 
     [Header("Agent Info")]
     // Instantiates prefabs in a circle formation
     public GameObject[] agents;
 
     public GameObject[] TrialAgents;
-
-    public GameObject[] agentsGaze;
 
     public GameObject speakerAgentHeadObject; // center of the group or speaking agent
     public GameObject avatarHeadObject; // avatar's head cube
@@ -55,7 +73,9 @@ public class GroupFormation : MonoBehaviour {
 
     //experiment parameters
     public bool demo;
+    bool trialOngoing = false;
     public int experimentConditionsNo;//numebr of all unique conditions of a variable (eg. 4 distnaces between agents)
+    public int trialNo = 1;//numebr of demo trials
     public int expCondRepeatNo;//number of repetition of conditions in each experiment (eg. 2, will create 8 trials)    
     public int experimentBlocksNo;//numebr of blocks that we want to have in an experiment (eg. 2, it will create 8 trials) 
     //indicates the row to be fetched in the balanced latin square csv file to create the trials (ex. 0..3)
@@ -64,31 +84,16 @@ public class GroupFormation : MonoBehaviour {
     int latinSquareRowToFetch;
 
 
-    int trialId = 0;
+    public int trialId = 0;
 
     List<string> ExpeConditions; //list of all trial of the experiment provided by latin square method (each value is a string that contains several variables' values: table and group distance, gaze,... check latin square help file for details)
-    /*
-        *
-        * Condition	1. Distance between agents (m)	2. Conversation between agents	3. Gaze direction           4. Embodiement	   5. Behavior                  Verbal of the passive agent
-        * 1	        0.4 (1)	                            No (1)	                    No Gaze (1)	                Cylinder (1)	   Ignore the user (1)	
-        * 2	        0.7 (2)	                            No (1)	                    No Gaze (1)	                Cylinder (1)	   Ignore the user (1)
-        * 3	        1 (3)	                            No (1)	                    No Gaze (1)	                Cylinder (1)	   Ignore the user (1)		
-        * 4	        1.3 (4)	                            No (1)	                    No Gaze (1)	                Cylinder (1)	   Ignore the user (1)
-        * 5	        0.4 (1)	                            Yes (2)	                    Other agent (2)	            Agent (2)	       Ignore the user (1)	
-        * 6	        0.7 (2)	                            Yes (2)	                    Other agent (2)	            Agent (2)	       Ignore the user (1)	
-        * 7	        1 (3)	                            Yes (2)	                    Other agent (2)	            Agent (2)	       Ignore the user (1)	
-        * 8	        1.3 (4)	                            Yes (2)	                    Other agent (2)	            Agent (2)	       Ignore the user (1)	
-        * 9	        0.4 (1)	                            Yes (2)	                    User-Other agent-User (3)	Agent (2)	       Acknowledge the user (2)		Hi, feel free to take the cup of coffee.
-        * 10	    0.7 (2)	                            Yes (2)	                    User-Other agent-User (3)	Agent (2)	       Acknowledge the user (2)		Hi, feel free to take the cup of coffee.
-        * 11	    1 (3)	                            Yes (2)	                    User-Other agent-User (3)	Agent (2)	       Acknowledge the user (2)		Hi, feel free to take the cup of coffee.
-        * 12	    1.3 (4)	                            Yes (2)	                    User-Other agent-User (3)	Agent (2)	       Acknowledge the user (2)		Hi, feel free to take the cup of coffee.
-        */
     string trialStr;//it includes all the values for one experiment condition (trial) (table and group distance, gaze,... check latin square help file for details).
-    int trialAgentsDistanceID = 0;
+
     int trialConversationID = 0;
     int trialGazeID = 0;
     int trialBehaviorID = 0;
-    
+    int trialVerbalID = 0;
+
 
     //CSV files parameters
     private StreamWriter SWexpe;
@@ -147,14 +152,15 @@ public class GroupFormation : MonoBehaviour {
     private void Start () {
         myCollider = transform.GetComponent<CapsuleCollider>();
 
-        agents[2].GetComponent<HeadLookController>().targetObject = agentsGaze[2].transform;
-        agents[3].GetComponent<HeadLookController>().targetObject = agentsGaze[3].transform;
+        agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+        agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+        agents[2].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+        agents[3].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
   
 
 
         //look at the participant
-        agents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-        agents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+
         TrialAgents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
         TrialAgents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
 
@@ -173,7 +179,7 @@ public class GroupFormation : MonoBehaviour {
         }
         else
         {
-            dataEntry.SetActive(false);
+            dataEntry.SetActive(true);
             trialTableMug.SetActive(false);
         }
     }
@@ -203,10 +209,10 @@ public class GroupFormation : MonoBehaviour {
     private void StartGame()
     {
         ReadRowToFetchForBalancedLatinSquare();
-        // Generate trial paths based on Latin square method and the number of experiment conditions 
-        //ExpeConditions = GenerateLatinSquare(experimentConditionsNo, experimentBlocksNo);
-        // Generate trial paths based on Balanced Latin square method for 12 conditions
-        ExpeConditions = CreateBalancedLatinSquareTrials();
+
+        Debug.Log("Making list");
+
+       ExpeConditions = CreateRandomisedListOfConditions();
 
         Initialization();
     }
@@ -220,46 +226,24 @@ public class GroupFormation : MonoBehaviour {
             agents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
             agents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
 
-            StartCoroutine(DelayedConversation(3.8f));
+            //StartCoroutine(DelayedConversation(3.8f));
 
-            agents[0].GetComponent<HeadLookController>().targetObject = agentsGaze[0].transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = agentsGaze[1].transform;
-
-            StartCoroutine(StartDiscussion(1, 0, "Examples/DemoEN/CoffeeCup/Fake1Ver2"));
+            agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+            agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
 
             flag = false;
         }
 
-        if (flag2)
+        if (flagAcknowledgeFriendly)
         {
-            //look at the participant
-            agents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-
-            StartCoroutine(DelayedConversation(3.8f));
-
-            agents[0].GetComponent<HeadLookController>().targetObject = agentsGaze[0].transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = agentsGaze[1].transform;
-
-            StartCoroutine(StartDiscussion(1, 0, "Examples/DemoEN/CoffeeCup/Fake1Ver2"));
-
-            flag2 = false;
+            StartCoroutine(AcknowledgeFriendly(7f));
+            flagAcknowledgeFriendly = false;
         }
 
-        if (flag3)
+        if (flagAcknowledgeUnfriendly)
         {
-            //look at the participant
-            agents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-
-            StartCoroutine(DelayedConversation(3.8f));
-
-            agents[0].GetComponent<HeadLookController>().targetObject = agentsGaze[0].transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = agentsGaze[1].transform;
-
-            StartCoroutine(StartDiscussion(1, 0, "Examples/DemoEN/CoffeeCup/Fake1Ver2"));
-
-            flag3 = false;
+            StartCoroutine(AcknowledgeUnfriendly(7f));
+            flagAcknowledgeUnfriendly = false;
         }
 
         if (gameStartedFlag)
@@ -270,24 +254,32 @@ public class GroupFormation : MonoBehaviour {
                 Debug.Log("Trial over");
                 //set the flag to false in order to stop capturing the user trajectory
                 Walking.captureTrajectoryFlag = false;
+                trialOngoing = false;
 
                 //show trial questionnaire to the user
                 if (!demo)
                 {
                     tableMug.SetActive(false); //hide the mug on the table
                     trialHintsCanvas.SetActive(false); // hide trial hints canvas
-                    collisionDetection.cupGrabbedFlag = false; //set the cup grabbed flag of the collision script to false
+                    //pointer.SetActive(true);
                     questionnaireObject.SetActive(true);
 
                     //StopCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
                     //StopCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/FakeTalk2"));
                 }
-                else if (trialId < 1) // give the user a two trials to be familair with the environment only for two trials 
+                else
                 {
-                    //pointer.SetActive(true);
+                    // give the user some trials to be familair with the environment only for two trials 
+                    if (trialId >= trialNo)
+                    {
+                        demo = false;
+                        trialId = 0;
+                    }
+
                     //questionnaireObject.SetActive(true);
                     Initialization();
-                } 
+                }
+
 
                 //save the current trial values in the CSV file
                 //SaveTrialData2File();
@@ -314,8 +306,9 @@ public class GroupFormation : MonoBehaviour {
         {
             //New trial
             trialStr = ExpeConditions[trialId];
-            Debug.Log("TRIAAAAAALLLLLLLL STR = " + trialStr + ",       trial" + trialId.ToString());
             trialId++;
+
+            Debug.Log("TRIAAAAAALLLLLLLL STR = " + trialStr + ",       trial" + trialId.ToString());
 
 
             //display trial number only when not in demo
@@ -324,11 +317,14 @@ public class GroupFormation : MonoBehaviour {
             else
                 trialIdTextBox.text = "demo";
 
+
+            Debug.Log("Set trial text");
             //set trial condition (trialAgentsDistanceID, trialConversationID, trialGazeID, trialEmbodiementID, trialFeedbackID)
             SetTrialCondition();
         }
         else
         {
+            Debug.Log("game over ");
             //Game Over!
             gameStartedFlag = false;
             endMessageWindow.SetActive(true);
@@ -346,32 +342,30 @@ public class GroupFormation : MonoBehaviour {
         SetAgentsAttention(trialGazeID);
 
 
-        //start the conversation
-        if (trialConversationID == 2)
+        if (trialGazeID == A_U_A_GAZE)
         {
-            //start the conversation and ignore the user
-            if (trialGazeID == 2)
-            {
-                StartAgentsConversation(); 
-            }
-            //after looking to the user, look back to each other and start the conversation
-            //trialGazeID == 3 --> agents first look at the user (attentionID = 3), then to each other during conversation (attentionID = 2), and if user crosses the o-space again to the user (attentionID = 3)
-            else if (trialGazeID == 3)
-            {
-                StartCoroutine(DelayedConversation(3.8f));
-            }
+            //StartCoroutine(DelayedConversation(3.8f));
+            StartAgentsConversation();
         }
-
+        //start the conversation and ignore the user
+        else
+        {
+            StartAgentsConversation(); 
+        }
+        //after looking to the user, look back to each other and start the conversation
+        //trialGazeID == 3 --> agents first look at the user (attentionID = 3), then to each other during conversation (attentionID = 2), and if user crosses the o-space again to the user (attentionID = 3)
+  
+       
         //set the flag to true in order to start capturing the user trajectory
         Walking.captureTrajectoryFlag = true;
-
+        trialOngoing = true;
     }
 
     IEnumerator DelayedConversation(float delayTime)
     {
         //acknowledge user presence by talking to the user
-        //StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/Acknowledge1"));
-        StartCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/Acknowledge2"));
+        StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/Acknowledge1"));
+        StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Acknowledge2"));
 
         //Wait for the specified delay time before continuing.
         yield return new WaitForSeconds(delayTime);
@@ -384,14 +378,22 @@ public class GroupFormation : MonoBehaviour {
     {
         try
         {
-            int.TryParse(trialStr[0].ToString(), out trialAgentsDistanceID);
-            int.TryParse(trialStr[1].ToString(), out trialConversationID);
-            int.TryParse(trialStr[2].ToString(), out trialGazeID); 
-            int.TryParse(trialStr[4].ToString(), out trialBehaviorID);
+            Debug.Log("parsing: " + trialStr);
+
+            int.TryParse(trialStr[0].ToString(), out trialConversationID);
+            Debug.Log("parsing: " + trialConversationID);
+
+
+            int.TryParse(trialStr[1].ToString(), out trialGazeID);
+            Debug.Log("parsing: " + trialGazeID);
+            int.TryParse(trialStr[2].ToString(), out trialBehaviorID);
+            Debug.Log("parsing: " + trialBehaviorID);
+            int.TryParse(trialStr[3].ToString(), out trialVerbalID);
+            Debug.Log("parsing: " + trialVerbalID);
         }
         catch (System.Exception e)
         {
-            print("Error:"+ e.Message);
+            Debug.LogError("Error parse:"+ e.Message);
         }
     }
 
@@ -495,11 +497,9 @@ public class GroupFormation : MonoBehaviour {
 
     }
 
-    //attentionID == 2 --> agents look at each other
-    //attentionID == 3 --> passive agent looks at user
-    private void SetAgentsAttention(int attentionID) //, int agentID1toChangeGaze, int agentID2toChangeGaze)
+    private void SetAgentsAttention(int attentionID)
     {
-        if (attentionID == 2) //Change the focus of the agents' heads to the each other
+        if (attentionID == OTHER_AGENT_GAZE) //Change the focus of the agents' heads to the each other
         {
             //Change the focus of secondary agent Head Look Controler to the speaker agent
             speakerAgentHeadObject.transform.position = new Vector3(agents[mainAgentId].transform.position.x, speakerAgentHeadObject.transform.position.y, agents[mainAgentId].transform.position.z);
@@ -509,15 +509,18 @@ public class GroupFormation : MonoBehaviour {
             addresseeAgentHeadObject.transform.position = new Vector3(agents[lateralAgent1Id].transform.position.x, addresseeAgentHeadObject.transform.position.y, agents[lateralAgent1Id].transform.position.z);
             agents[mainAgentId].GetComponent<HeadLookController>().targetObject = addresseeAgentHeadObject.transform;
         }
-        else if (attentionID == 3) //Change the focus of both agents Head Look Controler to the user
+        else if (attentionID == USER_GAZE) //Change the focus of both agents Head Look Controler to the user
         {
-            //look at the painting on the wall
-            //agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = paintingGazeObject.transform;
-            //agents[mainAgentId].GetComponent<HeadLookController>().targetObject = paintingGazeObject.transform;
 
             //look at the participant
             agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
             agents[mainAgentId].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        }
+        else if (attentionID == NO_GAZE)
+        {
+            //look at the painting on the wall
+            agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = paintingGazeObject.transform;
+            agents[mainAgentId].GetComponent<HeadLookController>().targetObject = paintingGazeObject.transform;
         }
     }
 
@@ -525,25 +528,37 @@ public class GroupFormation : MonoBehaviour {
     {
         //start the main conversation    
 
-        if (trialConversationID == 2) // conversation mode: send the fake concersations
+        Debug.Log("Trial Conversation Id = " + trialConversationID);
+
+        if (trialConversationID == FRIENDLY_CONVERSATION) // conversation mode: send the fake concersations
         {
-            StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/Fake1Ver2"));
-            //StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
-            //StartCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/FakeTalk2"));
+            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/FriendlyTalk1"));
+            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/FriendlyTalk2"));
         }
-        else //no conversation mode: send the Rest gesture  
+        else if (trialConversationID == NEUTRAL_CONVERSATION) 
         {
-            StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/Rest"));
-            StartCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/Rest"));
+            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/NeutralTalk1"));
+            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/NeutralTalk2"));
+        }
+        else if (trialConversationID == UNFRIENDLY_CONVERSATION)
+        {
+            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/UnfriendlyTalk1"));
+            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/UnfriendlyTalk2"));
+        }
+        else if (trialConversationID == NO_CONVERSATION)//no conversation mode: send the Rest gesture
+        {
+            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/Rest"));
+            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Rest"));
         }
     }
 
-    private IEnumerator StartDiscussion(int agentNo, float sec, string command)
+    private IEnumerator StartGretaAnimation(int agentNo, float sec, string command)
     {
         Debug.Log("politeness strategy to play: "+command);
 
         yield return new WaitForSeconds(sec);
         
+
         agents[agentNo].GetComponent<GretaCharacterAnimator>().PlayAgentAnimation(command);
     }
 
@@ -766,6 +781,50 @@ public class GroupFormation : MonoBehaviour {
         hintsWindow.SetActive(false);
     }
 
+    /* Read the list of conditions then shuffel them */
+    private List<string> CreateRandomisedListOfConditions()
+    {
+        List<string> result = null;
+
+        try
+        {
+            Debug.Log("beat1 ");
+            TextAsset conditionData = Resources.Load<TextAsset>("Conditions");
+            Debug.Log("beat2");
+
+            //the interesting row to be repeated
+            string[] conditionArray = conditionData.text.Split(new char[] { ',' });
+
+            Debug.Log("beat3");
+
+            Debug.Log("Condition Data: " + conditionData.text);
+
+            result = FisherShuffle(new List<string>(conditionArray));
+
+            Debug.Log($"[{string.Join(",", result)}]");
+
+        }
+        catch (System.Exception e)
+        {
+            Debug.Log(e.ToString());
+        }
+
+        return result;
+    }
+
+    public static List<string> FisherShuffle(List<string> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            string temp = list[i];
+            list[i] = list[j];
+            list[j] = temp;
+        }
+        return list;
+    }
+
+
     /* provide the latin square for a 6-trial experiment. It will open the "Assets\Resources\BalancedLatinSquare.csv" file and read the current row based on the "latinSquareRowToFetch". 
     * Then it will repeat the fetched row based on the "expCondRepeatNo" and create the trials of the experiment. 
     * */
@@ -852,80 +911,61 @@ public class GroupFormation : MonoBehaviour {
 
     private void OnTriggerEnter(Collider col)
     {
-        //colObject = col;
         //avatarCollision = true;
-
-        CapsuleCollider myCollider = transform.GetComponent<CapsuleCollider>();
         //myCollider.radius = 10f; // or whatever radius you want.
 
-        Debug.Log(col.gameObject.name + " entered to : " + gameObject.name + " myCollider.radius = " + myCollider.radius.ToString());
+        Debug.Log(col.gameObject.name + " entered to : " + gameObject.tag + " myCollider.radius = " + myCollider.radius.ToString());
 
-        /*
-        if (col.gameObject.name == avatarName)
+        if ( trialOngoing && col.gameObject.tag == "UserHead")
         {
-            //avatar is far from the the center of the group
-            if (collisionNo < 6 && NoActiveAgents == 3)
-            {
-                //Start a fake conversation among the agents
-                FakeConversationManager();
+           if (trialBehaviorID == ACKNOWLEDGE_FRIENDLY_VERBAL)
+           {
+                StartCoroutine(AcknowledgeFriendly(3.8f));
+           }
+           else if (trialBehaviorID == ACKNOWLEDGE_UNFRIENDLY_VERBAL)
+           {
+                StartCoroutine(AcknowledgeUnfriendly(3.8f));
             }
-            else if (collisionNo == 6 && NoActiveAgents == 3) //avatar is inside the group radius for talking (P-Space)
-            {
-                //if (NoActiveAgents == 3) {
-                //Change the focus of Head Look Controler to the avatar
-                agents[0 + agentsGender].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-                agents[1 + agentsGender].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-                agents[2 + agentsGender].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-                agents[3 + agentsGender].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-
-                //start the main trial and disscussion
-                StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/Politeness/Politeness Startegy " + PoliteStgNo.ToString()));
-                StartCoroutine(StartDiscussion(lateralAgent1Id, 4.8f, "Examples/DemoEN/Politeness/Lateral 1"));
-                StartCoroutine(StartDiscussion(lateralAgent2Id, 5.6f, "Examples/DemoEN/Politeness/Lateral 2"));
-                /*}
-                else if (NoActiveAgents == 2)
-                {
-                    //Change the focus of main agent Head Look Controler to the avatar
-                    agents[mainAgentId].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-
-                    //start the main trial and disscussion
-                    string PSId = PoliteStgNo.ToString();
-
-                    //choose the direction to show
-                    if (showLeft)
-                    {
-                        PSId += "L";
-                        showLeft = false;
-                    }
-                    else
-                    {
-                        PSId += "R";
-                        showLeft = true;
-                    }
-                    
-
-                    StartCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/Politeness/PS" + PSId));
-                }
-            }
-            else if (collisionNo == collisionThreshold && NoActiveAgents == 2) //avatr is inside the memebrs' group radius for talking (O-Space)
-            {
-                //Change the focus of the lateral agent Head Look Controler to the avatar
-                agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-            }
-        }*/
+        }
     }
 
     private void OnTriggerExit(Collider col)
     {
         //avatarCollision = false;
         Debug.Log(col.gameObject.name + " exited the : " + gameObject.name);
+    }
 
+    private IEnumerator AcknowledgeFriendly(float gazeTime)
+    {
+        //look at the participant
+        agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        agents[mainAgentId].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
 
+        StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/AcknowledgeFriendly"));
+        StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Rest"));
 
-        /*
-        //Start a fake conversation among the agents
-        if (col.gameObject.name == avatarName && collisionNo < 6)
-            FakeConversationManager();
-            */
+        yield return new WaitForSeconds(gazeTime);
+
+        agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+        agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+
+        StartAgentsConversation();
+    }
+
+    private IEnumerator AcknowledgeUnfriendly(float gazeTime)
+    {
+        //look at the participant
+        agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        agents[mainAgentId].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+
+        StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendly"));
+        StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Rest"));
+
+        yield return new WaitForSeconds(gazeTime);
+
+        agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+        agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+
+        StartAgentsConversation();
     }
 }
