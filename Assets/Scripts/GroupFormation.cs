@@ -31,8 +31,23 @@ public class GroupFormation : MonoBehaviour {
     [Header("Agent Info")]
     // Instantiates prefabs in a circle formation
     public GameObject[] agents;
+    private HeadLookController[] agentHeads;
+    public GretaDelayWrapper[] gretaDelayWrappers;
 
     public GameObject[] TrialAgents;
+
+    public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues1;
+    public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues2;
+    public List<GretaDelayWrapper.AnimationCommand> NeutralDialogues1;
+    public List<GretaDelayWrapper.AnimationCommand> NeutralDialogues2;
+    public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues1;
+    public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues2;
+
+    public GretaDelayWrapper.AnimationCommand RestCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeFriendly", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendly", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 3);
 
     public GameObject speakerAgentHeadObject; // center of the group or speaking agent
     public GameObject avatarHeadObject; // avatar's head cube
@@ -152,19 +167,19 @@ public class GroupFormation : MonoBehaviour {
     private void Start () {
         myCollider = transform.GetComponent<CapsuleCollider>();
 
-        agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-        agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-        agents[2].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-        agents[3].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-  
+        agentHeads = new HeadLookController[agents.Length];
+        gretaDelayWrappers = new GretaDelayWrapper[agents.Length];
 
-
-        //look at the participant
+        for (int i = 0; i < agents.Length; i++)
+        {
+            agentHeads[i] = agents[i].GetComponent<HeadLookController>();
+            gretaDelayWrappers[i] = agents[i].GetComponent<GretaDelayWrapper>();
+            //look at the participant
+            agentHeads[i].targetObject = speakerAgentHeadObject.transform;
+        }
 
         TrialAgents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
         TrialAgents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-
-
 
         endMessageWindow.SetActive(false);
         
@@ -223,13 +238,13 @@ public class GroupFormation : MonoBehaviour {
         if (flag)
         {
             //look at the participant
-            agents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+            agentHeads[0].targetObject = avatarHeadObject.transform;
+            agentHeads[1].targetObject = avatarHeadObject.transform;
 
             //StartCoroutine(DelayedConversation(3.8f));
 
-            agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-            agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+            agentHeads[0].targetObject = speakerAgentHeadObject.transform;
+            agentHeads[1].targetObject = speakerAgentHeadObject.transform;
 
             flag = false;
         }
@@ -364,8 +379,8 @@ public class GroupFormation : MonoBehaviour {
     IEnumerator DelayedConversation(float delayTime)
     {
         //acknowledge user presence by talking to the user
-        StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/Acknowledge1"));
-        StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Acknowledge2"));
+        //gretaDelayWrappers[mainAgentId].AddGretaAnimationWithMinDelay(0, "Examples/EmileProject/CoffeeCup/Acknowledge1");
+        //gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationWithMinDelay(0, "Examples/EmileProject/CoffeeCup/Acknowledge2");
 
         //Wait for the specified delay time before continuing.
         yield return new WaitForSeconds(delayTime);
@@ -530,29 +545,31 @@ public class GroupFormation : MonoBehaviour {
 
         Debug.Log("Trial Conversation Id = " + trialConversationID);
 
+        trialConversationID = FRIENDLY_CONVERSATION;
+
         if (trialConversationID == FRIENDLY_CONVERSATION) // conversation mode: send the fake concersations
         {
-            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/FriendlyTalk1"));
-            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/FriendlyTalk2"));
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(1, FriendlyDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(1, FriendlyDialogues2);
         }
         else if (trialConversationID == NEUTRAL_CONVERSATION) 
         {
-            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/NeutralTalk1"));
-            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/NeutralTalk2"));
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(0, NeutralDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(0, NeutralDialogues2);
         }
         else if (trialConversationID == UNFRIENDLY_CONVERSATION)
         {
-            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/UnfriendlyTalk1"));
-            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/UnfriendlyTalk2"));
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(0, UnfriendlyDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(0, UnfriendlyDialogues2);
         }
         else if (trialConversationID == NO_CONVERSATION)//no conversation mode: send the Rest gesture
         {
-            StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/Rest"));
-            StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Rest"));
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationWithMinDelay(0, RestCommand);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationWithMinDelay(0, RestCommand);
         }
     }
 
-    private IEnumerator StartGretaAnimation(int agentNo, float sec, string command)
+    /*private IEnumerator StartGretaAnimation(int agentNo, float sec, string command)
     {
         Debug.Log("politeness strategy to play: "+command);
 
@@ -560,7 +577,7 @@ public class GroupFormation : MonoBehaviour {
         
 
         agents[agentNo].GetComponent<GretaCharacterAnimator>().PlayAgentAnimation(command);
-    }
+    }*/
 
  
     // Latin Square n x n
@@ -938,33 +955,63 @@ public class GroupFormation : MonoBehaviour {
     private IEnumerator AcknowledgeFriendly(float gazeTime)
     {
         //look at the participant
-        agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-        agents[mainAgentId].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
 
-        StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/AcknowledgeFriendly"));
-        StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Rest"));
+        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeFriendlyCommand);
+        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeFriendlyPartnerCommand);
 
         yield return new WaitForSeconds(gazeTime);
 
-        agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-        agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-
-        StartAgentsConversation();
+        agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
     }
 
     private IEnumerator AcknowledgeUnfriendly(float gazeTime)
     {
         //look at the participant
-        agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
-        agents[mainAgentId].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
+        agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
 
-        StartCoroutine(StartGretaAnimation(mainAgentId, 0, "Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendly"));
-        StartCoroutine(StartGretaAnimation(lateralAgent1Id, 0, "Examples/EmileProject/CoffeeCup/Rest"));
+        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeUnfriendlyCommand);
+        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeUnfriendlyPartnerCommand);
 
         yield return new WaitForSeconds(gazeTime);
 
-        agents[0].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
-        agents[1].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
+        agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
+    }
+
+    private IEnumerator AcknowledgeFriendlyStart(float gazeTime)
+    {
+        //look at the participant
+        agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
+
+        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeFriendlyCommand);
+        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeFriendlyPartnerCommand);
+
+        yield return new WaitForSeconds(gazeTime);
+
+        agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
+
+        StartAgentsConversation();
+    }
+
+    private IEnumerator AcknowledgeUnfriendlyStart(float gazeTime)
+    {
+        //look at the participant
+        agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
+
+        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeUnfriendlyCommand);
+        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeUnfriendlyPartnerCommand);
+
+        yield return new WaitForSeconds(gazeTime);
+
+        agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
+        agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
 
         StartAgentsConversation();
     }

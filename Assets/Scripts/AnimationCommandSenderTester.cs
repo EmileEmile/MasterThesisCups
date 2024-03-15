@@ -21,15 +21,9 @@ public class AnimationCommandSenderTester : MonoBehaviour {
         //Debug.Log("name of the agent:    "+name); 
         try
         {
-            if (playBack1 && name == "Agent2")
+            if (playBack1)
             {
-                /*if (GroupFormation.avatarCollision && GroupFormation.colObject.gameObject.name == "Female")
-                {
-                    _charAnimScript.PlayAgentAnimation(animationID);
-                    playBack2 = false;
-                    Debug.Log("Set the playback of the AGENT 1 to TRUE!");
-                    playBack1 = true;
-                }*/
+                _charAnimScript.PlayAgentAnimation(animationID);
 
                 playBack1 = false;
             }
