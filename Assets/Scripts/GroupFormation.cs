@@ -28,6 +28,8 @@ public class GroupFormation : MonoBehaviour {
     public bool flagAcknowledgeFriendly = false;
     public bool flagAcknowledgeUnfriendly = false;
 
+    public float AudioStartVolume = 1.0f;
+
     [Header("Agent Info")]
     // Instantiates prefabs in a circle formation
     public GameObject[] agents;
@@ -261,50 +263,57 @@ public class GroupFormation : MonoBehaviour {
             flagAcknowledgeUnfriendly = false;
         }
 
-        if (gameStartedFlag)
+        if (gameStartedFlag && endTrialOnTriggerPress.activeSelf)
         {
-            //trial end
-            if (endTrialOnTriggerPress.activeSelf)
-            {
-                Debug.Log("Trial over");
-                //set the flag to false in order to stop capturing the user trajectory
-                Walking.captureTrajectoryFlag = false;
-                trialOngoing = false;
-
-                //show trial questionnaire to the user
-                if (!demo)
-                {
-                    tableMug.SetActive(false); //hide the mug on the table
-                    trialHintsCanvas.SetActive(false); // hide trial hints canvas
-                    //pointer.SetActive(true);
-                    questionnaireObject.SetActive(true);
-
-                    //StopCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
-                    //StopCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/FakeTalk2"));
-                }
-                else
-                {
-                    // give the user some trials to be familair with the environment only for two trials 
-                    if (trialId >= trialNo)
-                    {
-                        demo = false;
-                        trialId = 0;
-                    }
-
-                    //questionnaireObject.SetActive(true);
-                    Initialization();
-                }
-
-
-                //save the current trial values in the CSV file
-                //SaveTrialData2File();
-
-                //reload the next trial
-                //Initialization();
-
-                endTrialOnTriggerPress.SetActive(false);
-            }
+            EndTrial();
+            endTrialOnTriggerPress.SetActive(false);
         }
+    }
+
+    private void EndTrial()
+    {
+        Debug.Log("Trial over");
+        //set the flag to false in order to stop capturing the user trajectory
+        Walking.captureTrajectoryFlag = false;
+        trialOngoing = false;
+
+        AudioListener.volume = 0.0f;
+
+        gretaDelayWrappers[mainAgentId].ClearAnimationQueue();
+        gretaDelayWrappers[lateralAgent1Id].ClearAnimationQueue();
+
+        //show trial questionnaire to the user
+        if (!demo)
+        {
+            tableMug.SetActive(false); //hide the mug on the table
+            trialHintsCanvas.SetActive(false); // hide trial hints canvas
+                                               //pointer.SetActive(true);
+            questionnaireObject.SetActive(true);
+
+            //StopCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
+            //StopCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/FakeTalk2"));
+        }
+        else
+        {
+            // give the user some trials to be familair with the environment only for two trials 
+            if (trialId >= trialNo)
+            {
+                demo = false;
+                trialId = 0;
+            }
+
+            //questionnaireObject.SetActive(true);
+            Initialization();
+        }
+
+
+        //save the current trial values in the CSV file
+        //SaveTrialData2File();
+
+        //reload the next trial
+        //Initialization();
+
+        
     }
 
     private void Initialization()
@@ -314,6 +323,8 @@ public class GroupFormation : MonoBehaviour {
         FaceLossValue.value = 4;
         PositiveFaceValue.value = 4;
         NegativeFaceValue.value = 4;
+
+        AudioListener.volume = AudioStartVolume;
 
         //set trial parameters
         //if (trialId < 10)
@@ -931,7 +942,7 @@ public class GroupFormation : MonoBehaviour {
         //avatarCollision = true;
         //myCollider.radius = 10f; // or whatever radius you want.
 
-        Debug.Log(col.gameObject.name + " entered to : " + gameObject.tag + " myCollider.radius = " + myCollider.radius.ToString());
+        Debug.Log("hi! " + col.gameObject.name + " entered to : " + gameObject.tag + " myCollider.radius = " + myCollider.radius.ToString());
 
         if ( trialOngoing && col.gameObject.tag == "UserHead")
         {
