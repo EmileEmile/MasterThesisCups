@@ -4,25 +4,35 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using TMPro;
+using System.Linq;
 
 public class GroupFormation : MonoBehaviour {
-    private static int NO_CONVERSATION = 0;
-    private static int FRIENDLY_CONVERSATION = 1;
-    private static int NEUTRAL_CONVERSATION = 2;
-    private static int UNFRIENDLY_CONVERSATION = 3;
+    private const int NO_CONVERSATION = 0;
+    private const int FRIENDLY_CONVERSATION = 1;
+    private const int NEUTRAL_CONVERSATION = 2;
+    private const int UNFRIENDLY_CONVERSATION = 3;
 
-    private static int NO_GAZE = 0;
-    private static int USER_GAZE = 1;
-    private static int A_U_A_GAZE = 3;
-    private static int OTHER_AGENT_GAZE = 2;
+    private const int NO_GAZE = 0;
+    private const int USER_GAZE = 1;
+    private const int A_U_A_GAZE = 3;
+    private const int OTHER_AGENT_GAZE = 2;
 
-    private static int IGNORE_PB = 0;
-    private static int ACKNOWLEDGE_FRIENDLY_PB = 1;
+    private const int IGNORE_PB = 0;
+    private const int ACKNOWLEDGE_FRIENDLY_PB = 1;
     private static int ACKNOWLEDGE_UNFRIENDLY_PB = 3;
 
-    private static int IGNORE_VERBAL = 0;
-    private static int ACKNOWLEDGE_FRIENDLY_VERBAL = 1;
-    private static int ACKNOWLEDGE_UNFRIENDLY_VERBAL = 3;
+    private const int IGNORE_VERBAL = 0;
+    private const int ACKNOWLEDGE_FRIENDLY_VERBAL = 1;
+    private const int ACKNOWLEDGE_UNFRIENDLY_VERBAL = 3;
+
+    private static float FRIENDLY_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float UNFRIENDLY_ACKNOWLEDGE_GAZETIME = 5f;
+
+    private static float FRIENDLY_ACKNOWLEDGE_WAITTIME = FRIENDLY_ACKNOWLEDGE_GAZETIME;
+    private static float UNFRIENDLY_ACKNOWLEDGE_WAITTIME = UNFRIENDLY_ACKNOWLEDGE_GAZETIME;
+
+
+    public string ForceScenario = null;
 
     public bool flag = false;
     public bool flagAcknowledgeFriendly = false;
@@ -30,13 +40,19 @@ public class GroupFormation : MonoBehaviour {
 
     public float AudioStartVolume = 1.0f;
 
-    [Header("Agent Info")]
+
+
+  [Header("Agent Info")]
     // Instantiates prefabs in a circle formation
     public GameObject[] agents;
     private HeadLookController[] agentHeads;
     public GretaDelayWrapper[] gretaDelayWrappers;
 
     public GameObject[] TrialAgents;
+
+    public string FriendlyPrefix;
+    public string NeutralPrefix;
+    public string UnfriendlyPrefix;
 
     public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues1;
     public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues2;
@@ -132,6 +148,9 @@ public class GroupFormation : MonoBehaviour {
     public TMP_Dropdown playerHandedness;
     public TMP_Dropdown playerEnglishLevel;
     public TMP_Dropdown playerArtificialSysKnow;
+
+    public TMP_Text trialIdTextBoxEnd;
+    public TMP_Text timeTextBoxEnd;
     //canvas elements to be active only during the demo
     public GameObject demoSlider = null;
     public GameObject demoSliderLabel = null;
@@ -142,10 +161,6 @@ public class GroupFormation : MonoBehaviour {
     [Header("Questoinaire Data")]
     //Questionnaire data entry fields
     public GameObject questionnaireObject;
-    public Slider ClarityValue;
-    public Slider FaceLossValue;
-    public Slider PositiveFaceValue;
-    public Slider NegativeFaceValue;
     public Button playerComments;
     [Space(20)]
 
@@ -164,6 +179,8 @@ public class GroupFormation : MonoBehaviour {
     //private int collisionThreshold;
 
     private CapsuleCollider myCollider;
+
+    private float timeForTrial;
 
     // Use this for initialization
     private void Start () {
@@ -184,8 +201,12 @@ public class GroupFormation : MonoBehaviour {
         TrialAgents[1].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
 
         endMessageWindow.SetActive(false);
+
+        questionnaireObject.SetActive(false);
         
         trialHintsCanvas.SetActive(true);
+
+        AddPrefixesToAllXmlPaths();
 
         //display demo slider on data collection canvas only during demo
         if (demo) 
@@ -198,6 +219,23 @@ public class GroupFormation : MonoBehaviour {
         {
             dataEntry.SetActive(true);
             trialTableMug.SetActive(false);
+        }
+    }
+    private void AddPrefixesToAllXmlPaths()
+    {
+        AddPrefixesToXmlPaths(FriendlyPrefix, FriendlyDialogues1);
+        AddPrefixesToXmlPaths(FriendlyPrefix, FriendlyDialogues2);
+        AddPrefixesToXmlPaths(NeutralPrefix, NeutralDialogues1);
+        AddPrefixesToXmlPaths(NeutralPrefix, NeutralDialogues2);
+        AddPrefixesToXmlPaths(UnfriendlyPrefix, UnfriendlyDialogues1);
+        AddPrefixesToXmlPaths(UnfriendlyPrefix, UnfriendlyDialogues2);
+    }
+
+    private void AddPrefixesToXmlPaths(string prefix, List<GretaDelayWrapper.AnimationCommand> dialogues)
+    {
+        for (int i = 0; i < dialogues.Count; i++)
+        {
+            dialogues[i] = dialogues[i].AddPrefix(prefix);
         }
     }
 
@@ -268,6 +306,8 @@ public class GroupFormation : MonoBehaviour {
             EndTrial();
             endTrialOnTriggerPress.SetActive(false);
         }
+
+        timeForTrial += Time.deltaTime;
     }
 
     private void EndTrial()
@@ -288,6 +328,8 @@ public class GroupFormation : MonoBehaviour {
             tableMug.SetActive(false); //hide the mug on the table
             trialHintsCanvas.SetActive(false); // hide trial hints canvas
                                                //pointer.SetActive(true);
+            trialIdTextBoxEnd.text = trialStr;
+            timeTextBoxEnd.text = timeForTrial.ToString("0.00");
             questionnaireObject.SetActive(true);
 
             //StopCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
@@ -318,11 +360,7 @@ public class GroupFormation : MonoBehaviour {
 
     private void Initialization()
     {
-        //set questionnaire sliders to their defualt values (4 for a 7 value liker scale)
-        ClarityValue.value = 4;
-        FaceLossValue.value = 4;
-        PositiveFaceValue.value = 4;
-        NegativeFaceValue.value = 4;
+        timeForTrial = 0;
 
         AudioListener.volume = AudioStartVolume;
 
@@ -330,8 +368,16 @@ public class GroupFormation : MonoBehaviour {
         //if (trialId < 10)
         if (trialId < ExpeConditions.Count)
         {
-            //New trial
-            trialStr = ExpeConditions[trialId];
+            if (ForceScenario == null || ForceScenario.Length == 0)
+            {
+                //New trial
+                trialStr = ExpeConditions[trialId];
+            }
+            else
+            {
+                trialStr = ForceScenario;
+            }
+
             trialId++;
 
             Debug.Log("TRIAAAAAALLLLLLLL STR = " + trialStr + ",       trial" + trialId.ToString());
@@ -371,7 +417,18 @@ public class GroupFormation : MonoBehaviour {
         if (trialGazeID == A_U_A_GAZE)
         {
             //StartCoroutine(DelayedConversation(3.8f));
-            StartAgentsConversation();
+            if (trialBehaviorID == ACKNOWLEDGE_FRIENDLY_VERBAL)
+            {
+                StartCoroutine(AcknowledgeFriendly(FRIENDLY_ACKNOWLEDGE_GAZETIME));
+                StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+            }
+            else if (trialBehaviorID == ACKNOWLEDGE_UNFRIENDLY_VERBAL)
+            {
+                StartCoroutine(AcknowledgeUnfriendly(UNFRIENDLY_ACKNOWLEDGE_GAZETIME));
+                StartAgentsConversation(UNFRIENDLY_ACKNOWLEDGE_WAITTIME);
+            }
+
+
         }
         //start the conversation and ignore the user
         else
@@ -550,33 +607,36 @@ public class GroupFormation : MonoBehaviour {
         }
     }
 
-    private void StartAgentsConversation()
+    private void StartAgentsConversation(float delay = 0)
     {
         //start the main conversation    
 
         Debug.Log("Trial Conversation Id = " + trialConversationID);
 
-        trialConversationID = FRIENDLY_CONVERSATION;
-
         if (trialConversationID == FRIENDLY_CONVERSATION) // conversation mode: send the fake concersations
         {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(1, FriendlyDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(1, FriendlyDialogues2);
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues2);
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues2);
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues2);
+
         }
         else if (trialConversationID == NEUTRAL_CONVERSATION) 
         {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(0, NeutralDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(0, NeutralDialogues2);
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, NeutralDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, NeutralDialogues2);
         }
         else if (trialConversationID == UNFRIENDLY_CONVERSATION)
         {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(0, UnfriendlyDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(0, UnfriendlyDialogues2);
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, UnfriendlyDialogues1);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, UnfriendlyDialogues2);
         }
         else if (trialConversationID == NO_CONVERSATION)//no conversation mode: send the Rest gesture
         {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationWithMinDelay(0, RestCommand);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationWithMinDelay(0, RestCommand);
+            gretaDelayWrappers[mainAgentId].AddGretaAnimationWithMinDelay(delay, RestCommand);
+            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationWithMinDelay(delay, RestCommand);
         }
     }
 
@@ -653,7 +713,7 @@ public class GroupFormation : MonoBehaviour {
             //SaveGroupData2TrajectoryFile();
 
             //create a header for the user results 
-            SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,JOIN 1,FINAL JOIN,FAR,CLARITY,FACE LOSS,POSITIVE FACE,NEGATIVE FACE");
+            SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,JOIN 1,FINAL JOIN,FAR,TIME");
                 
             gameStartedFlag = true;
         }
@@ -769,7 +829,7 @@ public class GroupFormation : MonoBehaviour {
         Debug.Log("changeMindValue" + changeMindValue.value);*/
 
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + "No Join" + "," + "No Join" + "," + "No Join" + "," + ClarityValue.value + "," + FaceLossValue.value + "," + PositiveFaceValue.value + "," + NegativeFaceValue.value);
+        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + "No Join" + "," + "No Join" + "," + "No Join" + "," + timeForTrial);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -946,14 +1006,7 @@ public class GroupFormation : MonoBehaviour {
 
         if ( trialOngoing && col.gameObject.tag == "UserHead")
         {
-           if (trialBehaviorID == ACKNOWLEDGE_FRIENDLY_VERBAL)
-           {
-                StartCoroutine(AcknowledgeFriendly(3.8f));
-           }
-           else if (trialBehaviorID == ACKNOWLEDGE_UNFRIENDLY_VERBAL)
-           {
-                StartCoroutine(AcknowledgeUnfriendly(3.8f));
-            }
+
         }
     }
 

@@ -15,6 +15,11 @@ public class GretaDelayWrapper : MonoBehaviour
             this.name = name;
             this.length = length;
         }
+
+        public AnimationCommand AddPrefix(string prefix)
+        {
+            return new AnimationCommand(prefix + name, length);
+        }
     }
 
     private GretaCharacterAnimator gretaAnimator;
@@ -37,7 +42,7 @@ public class GretaDelayWrapper : MonoBehaviour
         if (gretaAnimator.agentPlaying! && waitingAnimations.Count > 0 && timeSinceLastPlay > waitTime)
         {
 
-            Debug.Log("Playing Anim: " + waitingAnimations.First.Value);
+            Debug.Log("Playing Anim: " + waitingAnimations.First.Value.name);
             gretaAnimator.agentPlaying = true;
             AnimationCommand nextCommand = waitingAnimations.First.Value;
             waitingAnimations.RemoveFirst();
@@ -63,6 +68,7 @@ public class GretaDelayWrapper : MonoBehaviour
 
     public void InteruptGretaAnimation(AnimationCommand command)
     {
+        waitTime = 0;
         waitingAnimations.AddFirst(command);
     }
 
@@ -84,6 +90,7 @@ public class GretaDelayWrapper : MonoBehaviour
         for (int i = 0; i < commands.Count; i++)
         {
             waitingAnimations.AddLast(commands[i]);
+            Debug.Log(commands[i].name);
         } 
     }
 }
