@@ -17,19 +17,24 @@ public class GroupFormation : MonoBehaviour {
     private const int A_U_A_GAZE = 3;
     private const int OTHER_AGENT_GAZE = 2;
 
-    private const int IGNORE_PB = 0;
-    private const int ACKNOWLEDGE_FRIENDLY_PB = 1;
-    private static int ACKNOWLEDGE_UNFRIENDLY_PB = 3;
-
     private const int IGNORE_VERBAL = 0;
-    private const int ACKNOWLEDGE_FRIENDLY_VERBAL = 1;
-    private const int ACKNOWLEDGE_UNFRIENDLY_VERBAL = 3;
+    private const int ACKNOWLEDGE_FRIENDLY_NO_WAIT_VERBAL = 1;
+    private const int ACKNOWLEDGE_NEUTRAL_NO_WAIT_VERBAL = 2;
+    private const int ACKNOWLEDGE_UNFRIENDLY_NO_WAIT_VERBAL = 3;
+    private const int ACKNOWLEDGE_FRIENDLY_WAIT_VERBAL = 4;
+    private const int ACKNOWLEDGE_NEUTRAL_WAIT_VERBAL = 5;
+    private const int ACKNOWLEDGE_UNFRIENDLY_WAIT_VERBAL = 6;
 
-    private static float FRIENDLY_ACKNOWLEDGE_GAZETIME = 5f;
-    private static float UNFRIENDLY_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float NEUTRAL_NO_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float UNFRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float FRIENDLY_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float NEUTRAL_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
+    private static float UNFRIENDLY_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
 
-    private static float FRIENDLY_ACKNOWLEDGE_WAITTIME = FRIENDLY_ACKNOWLEDGE_GAZETIME;
-    private static float UNFRIENDLY_ACKNOWLEDGE_WAITTIME = UNFRIENDLY_ACKNOWLEDGE_GAZETIME;
+    private static float FRIENDLY_ACKNOWLEDGE_WAITTIME = FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME;
+    private static float NEUTRAL_ACKNOWLEGE_WAITTIME = NEUTRAL_NO_WAIT_ACKNOWLEDGE_GAZETIME;
+    private static float UNFRIENDLY_ACKNOWLEDGE_WAITTIME = UNFRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME;
 
 
     public string ForceScenario = null;
@@ -61,11 +66,27 @@ public class GroupFormation : MonoBehaviour {
     public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues1;
     public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues2;
 
+
     public GretaDelayWrapper.AnimationCommand RestCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
-    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeFriendly", 3);
-    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 3);
-    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendly", 3);
-    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 3);
+
+    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyNoWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeFriendly", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyNoWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+
+    public GretaDelayWrapper.AnimationCommand AcknowledgeNeutralNoWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeNeutral", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeNeutralNoWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyNoWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendly", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyNoWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+
+    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeFriendlyWait", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+
+    public GretaDelayWrapper.AnimationCommand AcknowledgeNeutralWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeNeutralWait", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeNeutralWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendlyWait", 3);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+
 
     public GameObject speakerAgentHeadObject; // center of the group or speaking agent
     public GameObject avatarHeadObject; // avatar's head cube
@@ -105,6 +126,7 @@ public class GroupFormation : MonoBehaviour {
     int agentsGender = 0;
 
     //experiment parameters
+    public bool DisableTeleport = false;
     public bool demo;
     bool trialOngoing = false;
     public int experimentConditionsNo;//numebr of all unique conditions of a variable (eg. 4 distnaces between agents)
@@ -151,11 +173,12 @@ public class GroupFormation : MonoBehaviour {
 
     public TMP_Text trialIdTextBoxEnd;
     public TMP_Text timeTextBoxEnd;
+    public TMP_Text timePspaceEnd;
     //canvas elements to be active only during the demo
     public GameObject demoSlider = null;
-    public GameObject demoSliderLabel = null;
 
     [Space(20)]
+    public GameObject demoSliderLabel = null;
 
 
     [Header("Questoinaire Data")]
@@ -180,7 +203,10 @@ public class GroupFormation : MonoBehaviour {
 
     private CapsuleCollider myCollider;
 
+    private bool hitPspace = false;
+
     private float timeForTrial;
+    private float timeForPspace;
 
     // Use this for initialization
     private void Start () {
@@ -291,13 +317,13 @@ public class GroupFormation : MonoBehaviour {
 
         if (flagAcknowledgeFriendly)
         {
-            StartCoroutine(AcknowledgeFriendly(7f));
+            StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
             flagAcknowledgeFriendly = false;
         }
 
         if (flagAcknowledgeUnfriendly)
         {
-            StartCoroutine(AcknowledgeUnfriendly(7f));
+            StartCoroutine(AcknowledgeUser(UNFRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyNoWaitCommand, AcknowledgeUnfriendlyNoWaitPartnerCommand));
             flagAcknowledgeUnfriendly = false;
         }
 
@@ -308,6 +334,12 @@ public class GroupFormation : MonoBehaviour {
         }
 
         timeForTrial += Time.deltaTime;
+
+        if (!hitPspace)
+        {
+            timeForPspace += Time.deltaTime;
+        }
+
     }
 
     private void EndTrial()
@@ -330,6 +362,7 @@ public class GroupFormation : MonoBehaviour {
                                                //pointer.SetActive(true);
             trialIdTextBoxEnd.text = trialStr;
             timeTextBoxEnd.text = timeForTrial.ToString("0.00");
+            timePspaceEnd.text = timeForPspace.ToString("0.00");
             questionnaireObject.SetActive(true);
 
             //StopCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
@@ -361,6 +394,7 @@ public class GroupFormation : MonoBehaviour {
     private void Initialization()
     {
         timeForTrial = 0;
+        timeForPspace = 0;
 
         AudioListener.volume = AudioStartVolume;
 
@@ -416,19 +450,53 @@ public class GroupFormation : MonoBehaviour {
 
         if (trialGazeID == A_U_A_GAZE)
         {
-            //StartCoroutine(DelayedConversation(3.8f));
-            if (trialBehaviorID == ACKNOWLEDGE_FRIENDLY_VERBAL)
-            {
-                StartCoroutine(AcknowledgeFriendly(FRIENDLY_ACKNOWLEDGE_GAZETIME));
-                StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
-            }
-            else if (trialBehaviorID == ACKNOWLEDGE_UNFRIENDLY_VERBAL)
-            {
-                StartCoroutine(AcknowledgeUnfriendly(UNFRIENDLY_ACKNOWLEDGE_GAZETIME));
-                StartAgentsConversation(UNFRIENDLY_ACKNOWLEDGE_WAITTIME);
-            }
+            Debug.Log("HERE" + trialGazeID);
 
+            Debug.Log("trial behaviour" + trialBehaviorID);
+            switch (trialBehaviorID)
+            {
+                case ACKNOWLEDGE_FRIENDLY_NO_WAIT_VERBAL:
+                    Debug.Log("trial behaviourA1");
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
 
+                case ACKNOWLEDGE_NEUTRAL_NO_WAIT_VERBAL:
+                    Debug.Log("trial behaviourA2");
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeNeutralNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
+
+                case ACKNOWLEDGE_UNFRIENDLY_NO_WAIT_VERBAL:
+                    Debug.Log("trial behaviourA3");
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
+
+                case ACKNOWLEDGE_FRIENDLY_WAIT_VERBAL:
+                    Debug.Log("trial behaviourA4");
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
+
+                case ACKNOWLEDGE_NEUTRAL_WAIT_VERBAL:
+                    Debug.Log("trial behaviourA5");
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeNeutralWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
+
+                case ACKNOWLEDGE_UNFRIENDLY_WAIT_VERBAL:
+                    Debug.Log("trial behaviourA6");
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
+
+                default:
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME));
+                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    break;
+
+            }
         }
         //start the conversation and ignore the user
         else
@@ -829,7 +897,7 @@ public class GroupFormation : MonoBehaviour {
         Debug.Log("changeMindValue" + changeMindValue.value);*/
 
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + "No Join" + "," + "No Join" + "," + "No Join" + "," + timeForTrial);
+        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + "No Join" + "," + "No Join" + "," + "No Join" + "," + timeForTrial + "," + timeForPspace);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -1016,14 +1084,14 @@ public class GroupFormation : MonoBehaviour {
         Debug.Log(col.gameObject.name + " exited the : " + gameObject.name);
     }
 
-    private IEnumerator AcknowledgeFriendly(float gazeTime)
+    private IEnumerator AcknowledgeUser(float gazeTime, GretaDelayWrapper.AnimationCommand activeCommand, GretaDelayWrapper.AnimationCommand partnerCommand)
     {
         //look at the participant
         agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
         agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
 
-        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeFriendlyCommand);
-        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeFriendlyPartnerCommand);
+        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(activeCommand);
+        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(partnerCommand);
 
         yield return new WaitForSeconds(gazeTime);
 
@@ -1031,14 +1099,11 @@ public class GroupFormation : MonoBehaviour {
         agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
     }
 
-    private IEnumerator AcknowledgeUnfriendly(float gazeTime)
+    private IEnumerator AcknowledgeUser(float gazeTime)
     {
         //look at the participant
         agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
         agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
-
-        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeUnfriendlyCommand);
-        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeUnfriendlyPartnerCommand);
 
         yield return new WaitForSeconds(gazeTime);
 
@@ -1046,37 +1111,8 @@ public class GroupFormation : MonoBehaviour {
         agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
     }
 
-    private IEnumerator AcknowledgeFriendlyStart(float gazeTime)
+    public void EnteredPspace()
     {
-        //look at the participant
-        agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
-        agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
-
-        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeFriendlyCommand);
-        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeFriendlyPartnerCommand);
-
-        yield return new WaitForSeconds(gazeTime);
-
-        agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
-        agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
-
-        StartAgentsConversation();
-    }
-
-    private IEnumerator AcknowledgeUnfriendlyStart(float gazeTime)
-    {
-        //look at the participant
-        agentHeads[lateralAgent1Id].targetObject = avatarHeadObject.transform;
-        agentHeads[mainAgentId].targetObject = avatarHeadObject.transform;
-
-        gretaDelayWrappers[mainAgentId].InteruptGretaAnimation(AcknowledgeUnfriendlyCommand);
-        gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(AcknowledgeUnfriendlyPartnerCommand);
-
-        yield return new WaitForSeconds(gazeTime);
-
-        agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
-        agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
-
-        StartAgentsConversation();
+        hitPspace = true;
     }
 }
