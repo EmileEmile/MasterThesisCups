@@ -20,14 +20,14 @@ namespace TalesFromTheRift
 		
 		void Refresh()
 		{
-			// Show the current board
-			alphaBoardUnsfhifted.SetActive(!AltDown && !ShiftDown);
-			alphaBoardSfhifted.SetActive(!AltDown && ShiftDown);
-			numberBoardUnshifted.SetActive(AltDown && !ShiftDown);
-			numberBoardShifted.SetActive(AltDown && ShiftDown);
-		}
+            // Show the current board
+            //alphaBoardUnsfhifted.SetActive(!AltDown && !ShiftDown);
+            //alphaBoardSfhifted.SetActive(!AltDown && ShiftDown);
+            //numberBoardUnshifted.SetActive(AltDown && !ShiftDown);
+            //numberBoardShifted.SetActive(AltDown && ShiftDown);
+        }
 
-		public void OnKeyDown(GameObject kb)
+        public void OnKeyDown(GameObject kb)
 		{
 			if (kb.name == "DONE")
 			{

@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using TMPro;
-using System.Linq;
 
 public class GroupFormation : MonoBehaviour {
     private const int NO_CONVERSATION = 0;
@@ -55,16 +54,17 @@ public class GroupFormation : MonoBehaviour {
 
     public GameObject[] TrialAgents;
 
-    public string FriendlyPrefix;
-    public string NeutralPrefix;
-    public string UnfriendlyPrefix;
+    //TODO Uncomment if using dialogues
+    /* public string FriendlyPrefix;
+     public string NeutralPrefix;
+     public string UnfriendlyPrefix;
 
-    public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues1;
-    public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues2;
-    public List<GretaDelayWrapper.AnimationCommand> NeutralDialogues1;
-    public List<GretaDelayWrapper.AnimationCommand> NeutralDialogues2;
-    public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues1;
-    public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues2;
+     public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues1;
+     public List<GretaDelayWrapper.AnimationCommand> FriendlyDialogues2;
+     public List<GretaDelayWrapper.AnimationCommand> NeutralDialogues1;
+     public List<GretaDelayWrapper.AnimationCommand> NeutralDialogues2;
+     public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues1;
+     public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues2;*/
 
 
     public GretaDelayWrapper.AnimationCommand RestCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
@@ -107,7 +107,6 @@ public class GroupFormation : MonoBehaviour {
 
     //public GameObject coffeeTable;
     public GameObject tableMug;
-    public GameObject trialTableMug;
     public GameObject trialHintsCanvas;
 
     //bool playBack = true;
@@ -130,7 +129,7 @@ public class GroupFormation : MonoBehaviour {
     public bool demo;
     bool trialOngoing = false;
     public int experimentConditionsNo;//numebr of all unique conditions of a variable (eg. 4 distnaces between agents)
-    public int trialNo = 1;//numebr of demo trials
+    public int NumberOfDemoRounds = 2;//numebr of demo trials
     public int expCondRepeatNo;//number of repetition of conditions in each experiment (eg. 2, will create 8 trials)    
     public int experimentBlocksNo;//numebr of blocks that we want to have in an experiment (eg. 2, it will create 8 trials) 
     //indicates the row to be fetched in the balanced latin square csv file to create the trials (ex. 0..3)
@@ -139,12 +138,12 @@ public class GroupFormation : MonoBehaviour {
     int latinSquareRowToFetch;
 
 
-    public int trialId = 0;
+    public int trialIdNum = 0;
 
     List<string> ExpeConditions; //list of all trial of the experiment provided by latin square method (each value is a string that contains several variables' values: table and group distance, gaze,... check latin square help file for details)
     string trialStr;//it includes all the values for one experiment condition (trial) (table and group distance, gaze,... check latin square help file for details).
 
-    int trialConversationID = 0;
+    int trialStaticActionID = 0;
     int trialGazeID = 0;
     int trialBehaviorID = 0;
     int trialVerbalID = 0;
@@ -164,13 +163,7 @@ public class GroupFormation : MonoBehaviour {
     public GameObject dataEntry;
     public Button playerId; //the user who is palying with the avatar
     public TMP_Dropdown playerGender;
-    public Button playerAge;
-    public TMP_Dropdown playerOrigin;
-    public TMP_Dropdown playerResidence;
-    public TMP_Dropdown playerHandedness;
-    public TMP_Dropdown playerEnglishLevel;
-    public TMP_Dropdown playerArtificialSysKnow;
-
+    
     public TMP_Text trialIdTextBoxEnd;
     public TMP_Text timeTextBoxEnd;
     public TMP_Text timePspaceEnd;
@@ -183,6 +176,12 @@ public class GroupFormation : MonoBehaviour {
 
     [Header("Questoinaire Data")]
     //Questionnaire data entry fields
+    public Slider SpatialValue;
+    public Slider EngagementValue;
+    public Slider SocialRealismValue;
+    public Slider SocialPresenceActiveValue;
+    public Slider FriendlinessValue;
+
     public GameObject questionnaireObject;
     public Button playerComments;
     [Space(20)]
@@ -232,7 +231,7 @@ public class GroupFormation : MonoBehaviour {
         
         trialHintsCanvas.SetActive(true);
 
-        AddPrefixesToAllXmlPaths();
+        //AddPrefixesToAllXmlPaths();
 
         //display demo slider on data collection canvas only during demo
         if (demo) 
@@ -244,10 +243,9 @@ public class GroupFormation : MonoBehaviour {
         else
         {
             dataEntry.SetActive(true);
-            trialTableMug.SetActive(false);
         }
     }
-    private void AddPrefixesToAllXmlPaths()
+    /*private void AddPrefixesToAllXmlPaths()
     {
         AddPrefixesToXmlPaths(FriendlyPrefix, FriendlyDialogues1);
         AddPrefixesToXmlPaths(FriendlyPrefix, FriendlyDialogues2);
@@ -255,7 +253,7 @@ public class GroupFormation : MonoBehaviour {
         AddPrefixesToXmlPaths(NeutralPrefix, NeutralDialogues2);
         AddPrefixesToXmlPaths(UnfriendlyPrefix, UnfriendlyDialogues1);
         AddPrefixesToXmlPaths(UnfriendlyPrefix, UnfriendlyDialogues2);
-    }
+    }*/
 
     private void AddPrefixesToXmlPaths(string prefix, List<GretaDelayWrapper.AnimationCommand> dialogues)
     {
@@ -269,22 +267,26 @@ public class GroupFormation : MonoBehaviour {
     public void RegisterUserProfile()
     {
         Debug.Log("button pressed");
-        
-        //open two CSV files to save the trial results and save the user profile data, also to save the user trajectory data when joining the group
-        OpenCSVFiles();
 
-        //start the game
-        if (gameStartedFlag)
+        Debug.Log("playerGender.value: " + playerGender.value);
+
+        if (playerGender.value != 0 && playerId.GetComponentInChildren<TextMeshProUGUI>().text.Length > 3)
         {
-            dataEntry.SetActive(false);
-            //TODO hide pointers
-            TrialAgents[0].SetActive(false);
-            TrialAgents[1].SetActive(false);
-            tableMug.SetActive(true);
-            trialTableMug.SetActive(false);
-            StartGame();
+            //open two CSV files to save the trial results and save the user profile data, also to save the user trajectory data when joining the group
+            OpenCSVFiles();
+
+            //start the game
+            if (gameStartedFlag)
+            {
+                dataEntry.SetActive(false);
+                //TODO hide pointers
+                TrialAgents[0].SetActive(false);
+                TrialAgents[1].SetActive(false);
+                tableMug.SetActive(true);
+                StartGame();
+            }
+            //Debug.Log("");
         }
-        //Debug.Log("");
     }
 
     private void StartGame()
@@ -371,10 +373,10 @@ public class GroupFormation : MonoBehaviour {
         else
         {
             // give the user some trials to be familair with the environment only for two trials 
-            if (trialId >= trialNo)
+            if (trialIdNum >= NumberOfDemoRounds)
             {
                 demo = false;
-                trialId = 0;
+                trialIdNum = 0;
             }
 
             //questionnaireObject.SetActive(true);
@@ -393,33 +395,42 @@ public class GroupFormation : MonoBehaviour {
 
     private void Initialization()
     {
+        SpatialValue.value = 4;
+        EngagementValue.value = 4;
+        SocialRealismValue.value = 4;
+        SocialPresenceActiveValue.value = 4;
+        FriendlinessValue.value = 4;
+
+
         timeForTrial = 0;
         timeForPspace = 0;
+
+        hitPspace = false;
 
         AudioListener.volume = AudioStartVolume;
 
         //set trial parameters
         //if (trialId < 10)
-        if (trialId < ExpeConditions.Count)
+        if (trialIdNum < ExpeConditions.Count)
         {
             if (ForceScenario == null || ForceScenario.Length == 0)
             {
                 //New trial
-                trialStr = ExpeConditions[trialId];
+                trialStr = ExpeConditions[trialIdNum];
             }
             else
             {
                 trialStr = ForceScenario;
             }
 
-            trialId++;
+            trialIdNum++;
 
-            Debug.Log("TRIAAAAAALLLLLLLL STR = " + trialStr + ",       trial" + trialId.ToString());
+            Debug.Log("TRIAAAAAALLLLLLLL STR = " + trialStr + ",       trial" + trialIdNum.ToString());
 
 
             //display trial number only when not in demo
             if (!demo)
-                trialIdTextBox.text = trialId.ToString() + "/" + (expCondRepeatNo * experimentConditionsNo).ToString();
+                trialIdTextBox.text = trialIdNum.ToString() + "/" + (expCondRepeatNo * experimentConditionsNo).ToString();
             else
                 trialIdTextBox.text = "demo";
 
@@ -458,42 +469,42 @@ public class GroupFormation : MonoBehaviour {
                 case ACKNOWLEDGE_FRIENDLY_NO_WAIT_VERBAL:
                     Debug.Log("trial behaviourA1");
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
                 case ACKNOWLEDGE_NEUTRAL_NO_WAIT_VERBAL:
                     Debug.Log("trial behaviourA2");
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeNeutralNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
                 case ACKNOWLEDGE_UNFRIENDLY_NO_WAIT_VERBAL:
                     Debug.Log("trial behaviourA3");
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
                 case ACKNOWLEDGE_FRIENDLY_WAIT_VERBAL:
                     Debug.Log("trial behaviourA4");
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
                 case ACKNOWLEDGE_NEUTRAL_WAIT_VERBAL:
                     Debug.Log("trial behaviourA5");
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeNeutralWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
                 case ACKNOWLEDGE_UNFRIENDLY_WAIT_VERBAL:
                     Debug.Log("trial behaviourA6");
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
                 default:
                     StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME));
-                    StartAgentsConversation(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
                     break;
 
             }
@@ -501,7 +512,7 @@ public class GroupFormation : MonoBehaviour {
         //start the conversation and ignore the user
         else
         {
-            StartAgentsConversation(); 
+            StartAgentsStaticAction(); 
         }
         //after looking to the user, look back to each other and start the conversation
         //trialGazeID == 3 --> agents first look at the user (attentionID = 3), then to each other during conversation (attentionID = 2), and if user crosses the o-space again to the user (attentionID = 3)
@@ -531,8 +542,8 @@ public class GroupFormation : MonoBehaviour {
         {
             Debug.Log("parsing: " + trialStr);
 
-            int.TryParse(trialStr[0].ToString(), out trialConversationID);
-            Debug.Log("parsing: " + trialConversationID);
+            int.TryParse(trialStr[0].ToString(), out trialStaticActionID);
+            Debug.Log("parsing: " + trialStaticActionID);
 
 
             int.TryParse(trialStr[1].ToString(), out trialGazeID);
@@ -675,33 +686,13 @@ public class GroupFormation : MonoBehaviour {
         }
     }
 
-    private void StartAgentsConversation(float delay = 0)
+    private void StartAgentsStaticAction(float delay = 0)
     {
-        //start the main conversation    
+        //start the static action between the agents   
 
-        Debug.Log("Trial Conversation Id = " + trialConversationID);
-
-        if (trialConversationID == FRIENDLY_CONVERSATION) // conversation mode: send the fake concersations
-        {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues2);
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues2);
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, FriendlyDialogues2);
-
-        }
-        else if (trialConversationID == NEUTRAL_CONVERSATION) 
-        {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, NeutralDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, NeutralDialogues2);
-        }
-        else if (trialConversationID == UNFRIENDLY_CONVERSATION)
-        {
-            gretaDelayWrappers[mainAgentId].AddGretaAnimationSeriesWithMinDelay(delay, UnfriendlyDialogues1);
-            gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationSeriesWithMinDelay(delay, UnfriendlyDialogues2);
-        }
-        else if (trialConversationID == NO_CONVERSATION)//no conversation mode: send the Rest gesture
+        Debug.Log("Trial Conversation Id = " + trialStaticActionID);
+        
+        if (trialStaticActionID == NO_CONVERSATION)//no conversation mode: send the Rest gesture
         {
             gretaDelayWrappers[mainAgentId].AddGretaAnimationWithMinDelay(delay, RestCommand);
             gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationWithMinDelay(delay, RestCommand);
@@ -781,8 +772,8 @@ public class GroupFormation : MonoBehaviour {
             //SaveGroupData2TrajectoryFile();
 
             //create a header for the user results 
-            SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,JOIN 1,FINAL JOIN,FAR,TIME");
-                
+            SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P, Spatial Presence, Engagement, Social Realism, Social Presence, Friendliness");
+
             gameStartedFlag = true;
         }
     }
@@ -841,8 +832,8 @@ public class GroupFormation : MonoBehaviour {
     //save agents and group position and rotation and forward dirction into the trajectory file
     void SaveGroupData2TrajectoryFile()
     {
-        SWtrajectory.WriteLine("TRIAL," + trialId);
-        SWtrajectory.WriteLine("Condition ID," + trialId.ToString());
+        SWtrajectory.WriteLine("TRIAL," + trialIdNum);
+        SWtrajectory.WriteLine("Condition ID," + trialIdNum.ToString());
 
         SWtrajectory.WriteLine("LATERAL(POS X)," + agents[lateralAgent1Id].transform.localPosition.x);
         SWtrajectory.WriteLine("LATERAL(POS Y),0");
@@ -890,14 +881,19 @@ public class GroupFormation : MonoBehaviour {
         int lateralAg1 = lateralAgent1Id + 1;
         int mainAg = mainAgentId + 1;
 
-        /*Debug.Log("politenessVerbalValue: " + politenessVerbalValue.value);
-        Debug.Log("politenessGestureValue: " + politenessGestureValue.value);
-        Debug.Log("friendlyValue" + friendlyValue.value);
-        Debug.Log("similarityValue" + similarityValue.value);
-        Debug.Log("changeMindValue" + changeMindValue.value);*/
 
+        Debug.Log("SpatialValue: " + SpatialValue.value);
+        Debug.Log("EngagementValue: " + EngagementValue.value);
+        Debug.Log("SocialRealismValue: " + SocialRealismValue.value);
+        Debug.Log("SocialPresenceActiveValue.value: " + SocialPresenceActiveValue.value);
+
+        Debug.Log("FriendlinessValue: " + FriendlinessValue.value);
+
+        timeForPspace = hitPspace ? timeForPspace : -1;
+
+        //SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P, Spatial Presence, Engagement, Social Realism, Social Presence, Friendliness");
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialId + "," /*+ conditionID*/ + "," + lateralAg1 + "," + mainAg + "," + "No Join" + "," + "No Join" + "," + "No Join" + "," + timeForTrial + "," + timeForPspace);
+        SWexpe.WriteLine(trialIdNum + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ SpatialValue.value + "," + EngagementValue.value + "," + SocialRealismValue.value + "," + SocialPresenceActiveValue.value + "," + FriendlinessValue.value);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -949,7 +945,7 @@ public class GroupFormation : MonoBehaviour {
             Debug.Log("beat2");
 
             //the interesting row to be repeated
-            string[] conditionArray = conditionData.text.Split(new char[] { ',' });
+            string[] conditionArray = conditionData.text.TrimEnd('\r', '\n').Split(new char[] { ',' });
 
             Debug.Log("beat3");
 
