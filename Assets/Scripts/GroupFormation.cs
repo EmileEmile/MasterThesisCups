@@ -17,23 +17,18 @@ public class GroupFormation : MonoBehaviour {
     private const int OTHER_AGENT_GAZE = 2;
 
     private const int IGNORE_VERBAL = 0;
-    private const int ACKNOWLEDGE_FRIENDLY_NO_WAIT_VERBAL = 1;
-    private const int ACKNOWLEDGE_NEUTRAL_NO_WAIT_VERBAL = 2;
-    private const int ACKNOWLEDGE_UNFRIENDLY_NO_WAIT_VERBAL = 3;
-    private const int ACKNOWLEDGE_FRIENDLY_WAIT_VERBAL = 4;
-    private const int ACKNOWLEDGE_NEUTRAL_WAIT_VERBAL = 5;
-    private const int ACKNOWLEDGE_UNFRIENDLY_WAIT_VERBAL = 6;
+    private const int NEUTRAL_WAIT_VERBAL = 1;
+    private const int FRIENDLY_SUBMISSIVE_WAIT_VERBAL = 2;
+    private const int FRIENDLY_DOMINANT_WAIT_VERBAL = 3;
+    private const int HOSTILE_DOMINANT_WAIT_VERBAL = 4;
+    private const int HOSTILE_SUBMISSIVE_WAIT_VERBAL = 5;
 
-    private static float FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
-    private static float NEUTRAL_NO_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
-    private static float UNFRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
-    private static float FRIENDLY_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
-    private static float NEUTRAL_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
-    private static float UNFRIENDLY_WAIT_ACKNOWLEDGE_GAZETIME = 5f;
 
-    private static float FRIENDLY_ACKNOWLEDGE_WAITTIME = FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME;
-    private static float NEUTRAL_ACKNOWLEGE_WAITTIME = NEUTRAL_NO_WAIT_ACKNOWLEDGE_GAZETIME;
-    private static float UNFRIENDLY_ACKNOWLEDGE_WAITTIME = UNFRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME;
+    public float NEUTRAL_WAIT_GAZETIME = 5f;
+    public float FRIENDLY_SUBMISSIVE_WAIT_GAZETIME = 5f;
+    public float FRIENDLY_DOMINANT_WAIT_ACKNOWLEDGE_GAZETIME = 6f;
+    public float HOSTILE_SUBMISSIVE_ACKNOWLEDGE_GAZETIME = 6f;
+    public float HOSTILE_DOMINANT_ACKNOWLEDGE_GAZETIME = 5f;
 
 
     public string ForceScenario = null;
@@ -67,9 +62,19 @@ public class GroupFormation : MonoBehaviour {
      public List<GretaDelayWrapper.AnimationCommand> UnfriendlyDialogues2;*/
 
 
-    public GretaDelayWrapper.AnimationCommand RestCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+    GretaDelayWrapper.AnimationCommand RestCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/Rest", 0);
+    GretaDelayWrapper.AnimationCommand WaveCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/Wave", 0);
+    GretaDelayWrapper.AnimationCommand NeutralWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/Rest", 0);
 
-    public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyNoWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeFriendly", 3);
+
+    GretaDelayWrapper.AnimationCommand NeutralWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/WaitNeutral", 3);
+    GretaDelayWrapper.AnimationCommand FriendlySubmssiveWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/WaitFriendlySubmissive", 3);
+    GretaDelayWrapper.AnimationCommand FriendlyDominantWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/WaitFriendlyDominant", 4);
+    GretaDelayWrapper.AnimationCommand HostileSubmssiveWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/WaitHostileSubmissive", 3);
+    GretaDelayWrapper.AnimationCommand HostileDominantCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/FD/WaitHostileDominant", 3);
+
+    // OLD STRATEGIES
+    /*public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyNoWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeFriendly", 3);
     public GretaDelayWrapper.AnimationCommand AcknowledgeFriendlyNoWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
 
     public GretaDelayWrapper.AnimationCommand AcknowledgeNeutralNoWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeNeutral", 3);
@@ -85,10 +90,12 @@ public class GroupFormation : MonoBehaviour {
     public GretaDelayWrapper.AnimationCommand AcknowledgeNeutralWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
 
     public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyWaitCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/AcknowledgeUnfriendlyWait", 3);
-    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);
+    public GretaDelayWrapper.AnimationCommand AcknowledgeUnfriendlyWaitPartnerCommand = new GretaDelayWrapper.AnimationCommand("Examples/EmileProject/CoffeeCup/Rest", 0);*/
 
 
-    public GameObject speakerAgentHeadObject; // center of the group or speaking agent
+    GameObject speakerAgentHeadObject; // center of the group or speaking agent
+    public GameObject MaleSpeakerAgentHeadObject;
+    public GameObject FemaleSpeakerAgentHeadObject;
     public GameObject avatarHeadObject; // avatar's head cube
     public GameObject addresseeAgentHeadObject; // the adressee agent
     public GameObject paintingGazeObject; // the gaze object for the painting on the wall
@@ -176,10 +183,12 @@ public class GroupFormation : MonoBehaviour {
 
     [Header("Questoinaire Data")]
     //Questionnaire data entry fields
-    public Slider SpatialValue;
-    public Slider EngagementValue;
-    public Slider SocialRealismValue;
-    public Slider SocialPresenceActiveValue;
+    //public Slider SpatialValue;
+    //public Slider EngagementValue;
+    //public Slider SocialRealismValue;
+    //public Slider SocialPresenceActiveValue;
+    public Slider AuthorityValue;
+    public Slider DominanceValue;
     public Slider FriendlinessValue;
 
     public GameObject questionnaireObject;
@@ -207,6 +216,13 @@ public class GroupFormation : MonoBehaviour {
     private float timeForTrial;
     private float timeForPspace;
 
+    //Hack to set body position
+
+    public float BeforeWaveTime = 0.3f;
+
+    private float waveTimer = 0;
+    private bool hasWaved = false;
+
     // Use this for initialization
     private void Start () {
         myCollider = transform.GetComponent<CapsuleCollider>();
@@ -219,7 +235,7 @@ public class GroupFormation : MonoBehaviour {
             agentHeads[i] = agents[i].GetComponent<HeadLookController>();
             gretaDelayWrappers[i] = agents[i].GetComponent<GretaDelayWrapper>();
             //look at the participant
-            agentHeads[i].targetObject = speakerAgentHeadObject.transform;
+            agentHeads[i].targetObject = avatarHeadObject.transform;
         }
 
         TrialAgents[0].GetComponent<HeadLookController>().targetObject = avatarHeadObject.transform;
@@ -230,6 +246,8 @@ public class GroupFormation : MonoBehaviour {
         questionnaireObject.SetActive(false);
         
         trialHintsCanvas.SetActive(true);
+
+        AudioListener.volume = 0.0f;
 
         //AddPrefixesToAllXmlPaths();
 
@@ -295,7 +313,12 @@ public class GroupFormation : MonoBehaviour {
 
         Debug.Log("Making list");
 
-       ExpeConditions = CreateRandomisedListOfConditions();
+        ExpeConditions = new List<string>();
+
+        for (int i = 0; i < expCondRepeatNo; i++)
+        {
+            ExpeConditions.AddRange(CreateRandomisedListOfConditions());
+        }
 
         Initialization();
     }
@@ -319,13 +342,13 @@ public class GroupFormation : MonoBehaviour {
 
         if (flagAcknowledgeFriendly)
         {
-            StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
+            StartCoroutine(AcknowledgeUser(FRIENDLY_SUBMISSIVE_WAIT_GAZETIME, FriendlySubmssiveWaitCommand, NeutralWaitPartnerCommand));
             flagAcknowledgeFriendly = false;
         }
 
         if (flagAcknowledgeUnfriendly)
         {
-            StartCoroutine(AcknowledgeUser(UNFRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyNoWaitCommand, AcknowledgeUnfriendlyNoWaitPartnerCommand));
+            StartCoroutine(AcknowledgeUser(HOSTILE_DOMINANT_ACKNOWLEDGE_GAZETIME, HostileDominantCommand, NeutralWaitPartnerCommand));
             flagAcknowledgeUnfriendly = false;
         }
 
@@ -342,6 +365,20 @@ public class GroupFormation : MonoBehaviour {
             timeForPspace += Time.deltaTime;
         }
 
+        if (!hasWaved)
+        {
+            waveTimer += Time.deltaTime;
+            
+            if (waveTimer >= BeforeWaveTime)
+            {
+                hasWaved = true;
+
+                foreach (GretaDelayWrapper wrapper in gretaDelayWrappers)
+                {
+                    wrapper.InteruptGretaAnimation(WaveCommand);
+                }
+            }
+        }
     }
 
     private void EndTrial()
@@ -395,10 +432,7 @@ public class GroupFormation : MonoBehaviour {
 
     private void Initialization()
     {
-        SpatialValue.value = 4;
-        EngagementValue.value = 4;
-        SocialRealismValue.value = 4;
-        SocialPresenceActiveValue.value = 4;
+        //DominanceValue.value = 4;
         FriendlinessValue.value = 4;
 
 
@@ -466,45 +500,34 @@ public class GroupFormation : MonoBehaviour {
             Debug.Log("trial behaviour" + trialBehaviorID);
             switch (trialBehaviorID)
             {
-                case ACKNOWLEDGE_FRIENDLY_NO_WAIT_VERBAL:
+                case NEUTRAL_WAIT_VERBAL:
                     Debug.Log("trial behaviourA1");
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartCoroutine(AcknowledgeUser(NEUTRAL_WAIT_GAZETIME, NeutralWaitCommand, NeutralWaitPartnerCommand));
                     break;
 
-                case ACKNOWLEDGE_NEUTRAL_NO_WAIT_VERBAL:
+                case FRIENDLY_SUBMISSIVE_WAIT_VERBAL:
                     Debug.Log("trial behaviourA2");
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeNeutralNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_SUBMISSIVE_WAIT_GAZETIME, FriendlySubmssiveWaitCommand, NeutralWaitPartnerCommand));
                     break;
 
-                case ACKNOWLEDGE_UNFRIENDLY_NO_WAIT_VERBAL:
+                case FRIENDLY_DOMINANT_WAIT_VERBAL:
                     Debug.Log("trial behaviourA3");
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyNoWaitCommand, AcknowledgeFriendlyNoWaitPartnerCommand));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_DOMINANT_WAIT_ACKNOWLEDGE_GAZETIME, FriendlyDominantWaitCommand, NeutralWaitPartnerCommand));
                     break;
 
-                case ACKNOWLEDGE_FRIENDLY_WAIT_VERBAL:
+                case HOSTILE_SUBMISSIVE_WAIT_VERBAL:
                     Debug.Log("trial behaviourA4");
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeFriendlyWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartCoroutine(AcknowledgeUser(HOSTILE_SUBMISSIVE_ACKNOWLEDGE_GAZETIME, HostileSubmssiveWaitCommand, NeutralWaitPartnerCommand));
                     break;
 
-                case ACKNOWLEDGE_NEUTRAL_WAIT_VERBAL:
+                case HOSTILE_DOMINANT_WAIT_VERBAL:
                     Debug.Log("trial behaviourA5");
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeNeutralWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartCoroutine(AcknowledgeUser(HOSTILE_DOMINANT_ACKNOWLEDGE_GAZETIME, HostileDominantCommand, NeutralWaitPartnerCommand));
                     break;
 
-                case ACKNOWLEDGE_UNFRIENDLY_WAIT_VERBAL:
-                    Debug.Log("trial behaviourA6");
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME, AcknowledgeUnfriendlyWaitCommand, AcknowledgeFriendlyWaitPartnerCommand));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
-                    break;
 
                 default:
-                    StartCoroutine(AcknowledgeUser(FRIENDLY_NO_WAIT_ACKNOWLEDGE_GAZETIME));
-                    StartAgentsStaticAction(FRIENDLY_ACKNOWLEDGE_WAITTIME);
+                    StartCoroutine(AcknowledgeUser(FRIENDLY_SUBMISSIVE_WAIT_GAZETIME));
                     break;
 
             }
@@ -576,6 +599,7 @@ public class GroupFormation : MonoBehaviour {
         {
             Debug.Log("Male");
             agentsGender = 2;
+            speakerAgentHeadObject = MaleSpeakerAgentHeadObject;
             //make female agents invisible
             agents[0].transform.position = new Vector3(4, 0, -7);
             agents[1].transform.position = new Vector3(4, 0, -7);
@@ -584,6 +608,7 @@ public class GroupFormation : MonoBehaviour {
         {
             Debug.Log("feMale");
             agentsGender = 0;
+            speakerAgentHeadObject = FemaleSpeakerAgentHeadObject;
             //make male agents invisible
             agents[2].transform.position = new Vector3(4, 0, -7);
             agents[3].transform.position = new Vector3(4, 0, -7);
@@ -663,13 +688,11 @@ public class GroupFormation : MonoBehaviour {
     {
         if (attentionID == OTHER_AGENT_GAZE) //Change the focus of the agents' heads to the each other
         {
-            //Change the focus of secondary agent Head Look Controler to the speaker agent
-            speakerAgentHeadObject.transform.position = new Vector3(agents[mainAgentId].transform.position.x, speakerAgentHeadObject.transform.position.y, agents[mainAgentId].transform.position.z);
+            //Change the focus of secondary agent Head Look Controler to the speaker agenT
             agents[lateralAgent1Id].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
 
             //Change the focus of speaker agent Head Look Controler to the second agent
-            addresseeAgentHeadObject.transform.position = new Vector3(agents[lateralAgent1Id].transform.position.x, addresseeAgentHeadObject.transform.position.y, agents[lateralAgent1Id].transform.position.z);
-            agents[mainAgentId].GetComponent<HeadLookController>().targetObject = addresseeAgentHeadObject.transform;
+            agents[mainAgentId].GetComponent<HeadLookController>().targetObject = speakerAgentHeadObject.transform;
         }
         else if (attentionID == USER_GAZE) //Change the focus of both agents Head Look Controler to the user
         {
@@ -881,19 +904,13 @@ public class GroupFormation : MonoBehaviour {
         int lateralAg1 = lateralAgent1Id + 1;
         int mainAg = mainAgentId + 1;
 
-
-        Debug.Log("SpatialValue: " + SpatialValue.value);
-        Debug.Log("EngagementValue: " + EngagementValue.value);
-        Debug.Log("SocialRealismValue: " + SocialRealismValue.value);
-        Debug.Log("SocialPresenceActiveValue.value: " + SocialPresenceActiveValue.value);
-
         Debug.Log("FriendlinessValue: " + FriendlinessValue.value);
 
         timeForPspace = hitPspace ? timeForPspace : -1;
 
         //SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P, Spatial Presence, Engagement, Social Realism, Social Presence, Friendliness");
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialIdNum + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ SpatialValue.value + "," + EngagementValue.value + "," + SocialRealismValue.value + "," + SocialPresenceActiveValue.value + "," + FriendlinessValue.value);
+        SWexpe.WriteLine(trialIdNum + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ "" + "" + "," + "" + "," + "" + "," + "" + "," + FriendlinessValue.value);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -1090,6 +1107,9 @@ public class GroupFormation : MonoBehaviour {
         gretaDelayWrappers[lateralAgent1Id].InteruptGretaAnimation(partnerCommand);
 
         yield return new WaitForSeconds(gazeTime);
+
+        gretaDelayWrappers[mainAgentId].AddGretaAnimationWithMinDelay(gazeTime, partnerCommand);
+        gretaDelayWrappers[lateralAgent1Id].AddGretaAnimationWithMinDelay(gazeTime, partnerCommand);
 
         agentHeads[lateralAgent1Id].targetObject = speakerAgentHeadObject.transform;
         agentHeads[mainAgentId].targetObject = speakerAgentHeadObject.transform;
