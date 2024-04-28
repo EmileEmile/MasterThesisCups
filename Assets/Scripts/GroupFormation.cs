@@ -190,6 +190,11 @@ public class GroupFormation : MonoBehaviour {
     public Slider AuthorityValue;
     public Slider DominanceValue;
     public Slider FriendlinessValue;
+    public int WheelValue;
+
+    public Button NextButton;
+    private List<SegmentButton> segmentButtons;
+
 
     public GameObject questionnaireObject;
     public Button playerComments;
@@ -226,6 +231,8 @@ public class GroupFormation : MonoBehaviour {
     // Use this for initialization
     private void Start () {
         myCollider = transform.GetComponent<CapsuleCollider>();
+
+        segmentButtons = new List<SegmentButton>(FindObjectsOfType<SegmentButton>());
 
         agentHeads = new HeadLookController[agents.Length];
         gretaDelayWrappers = new GretaDelayWrapper[agents.Length];
@@ -434,7 +441,14 @@ public class GroupFormation : MonoBehaviour {
     {
         //DominanceValue.value = 4;
         FriendlinessValue.value = 4;
+        WheelValue = -1;
 
+        for (int i = 0; i < segmentButtons.Count; i++)
+        {
+            segmentButtons[i].thisButton.interactable = true;
+        }
+
+        NextButton.interactable = false;
 
         timeForTrial = 0;
         timeForPspace = 0;
