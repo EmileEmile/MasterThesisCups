@@ -138,7 +138,6 @@ public class GroupFormation : MonoBehaviour {
     public int experimentConditionsNo;//numebr of all unique conditions of a variable (eg. 4 distnaces between agents)
     public int NumberOfDemoRounds = 2;//numebr of demo trials
     public int expCondRepeatNo;//number of repetition of conditions in each experiment (eg. 2, will create 8 trials)    
-    public int experimentBlocksNo;//numebr of blocks that we want to have in an experiment (eg. 2, it will create 8 trials) 
     //indicates the row to be fetched in the balanced latin square csv file to create the trials (ex. 0..3)
     //it will be automatically fetched by the ReadRowToFetchForBalancedLatinSquare function from a CSV file
     [Range(0, 3)]
@@ -147,8 +146,8 @@ public class GroupFormation : MonoBehaviour {
 
     public int trialIdNum = 0;
 
-    List<string> ExpeConditions; //list of all trial of the experiment provided by latin square method (each value is a string that contains several variables' values: table and group distance, gaze,... check latin square help file for details)
-    string trialStr;//it includes all the values for one experiment condition (trial) (table and group distance, gaze,... check latin square help file for details).
+    public List<string> ExpeConditions; //list of all trial of the experiment provided by latin square method (each value is a string that contains several variables' values: table and group distance, gaze,... check latin square help file for details)
+    public string trialStr;//it includes all the values for one experiment condition (trial) (table and group distance, gaze,... check latin square help file for details).
 
     int trialStaticActionID = 0;
     int trialGazeID = 0;
@@ -161,7 +160,6 @@ public class GroupFormation : MonoBehaviour {
     private StreamWriter SWtrajectory;
 
     [Header("Hints Window")]
-    public GameObject hintsWindow;
     public TMP_Text trialIdTextBox; //the text box to show the trial id
     [Space(20)]
 
@@ -169,6 +167,7 @@ public class GroupFormation : MonoBehaviour {
     //User profile data entry fields
     public GameObject dataEntry;
     public Button playerId; //the user who is palying with the avatar
+    private string playerIdValue;
     public TMP_Dropdown playerGender;
     
     public TMP_Text trialIdTextBoxEnd;
@@ -187,16 +186,21 @@ public class GroupFormation : MonoBehaviour {
     //public Slider EngagementValue;
     //public Slider SocialRealismValue;
     //public Slider SocialPresenceActiveValue;
-    public Slider AuthorityValue;
+
+    public Slider ValenceParticipants;
+    public Slider ValenceAgents;
     public Slider DominanceValue;
-    public Slider FriendlinessValue;
+    public Slider FriendlinessOutValue;
+    public Slider FriendlinessInValue;
     public int WheelValue;
 
     public Button NextButton;
-    private List<SegmentButton> segmentButtons;
+    public SegmentButton selectedSegmentButton;
 
-
-    public GameObject questionnaireObject;
+    public GameObject endtrialUI;
+    public GameObject questionnaireDemo;
+    public GameObject questionnaireObject1;
+    public GameObject questionnaireObject2;
     public Button playerComments;
     [Space(20)]
 
@@ -228,11 +232,11 @@ public class GroupFormation : MonoBehaviour {
     private float waveTimer = 0;
     private bool hasWaved = false;
 
+    private string DemoStr = "0300";
+
     // Use this for initialization
     private void Start () {
         myCollider = transform.GetComponent<CapsuleCollider>();
-
-        segmentButtons = new List<SegmentButton>(FindObjectsOfType<SegmentButton>());
 
         agentHeads = new HeadLookController[agents.Length];
         gretaDelayWrappers = new GretaDelayWrapper[agents.Length];
@@ -250,8 +254,11 @@ public class GroupFormation : MonoBehaviour {
 
         endMessageWindow.SetActive(false);
 
-        questionnaireObject.SetActive(false);
-        
+        endtrialUI.SetActive(false);
+        questionnaireDemo.SetActive(false);
+        questionnaireObject1.SetActive(true);
+        questionnaireObject2.SetActive(false);
+
         trialHintsCanvas.SetActive(true);
 
         AudioListener.volume = 0.0f;
@@ -295,7 +302,9 @@ public class GroupFormation : MonoBehaviour {
 
         Debug.Log("playerGender.value: " + playerGender.value);
 
-        if (playerGender.value != 0 && playerId.GetComponentInChildren<TextMeshProUGUI>().text.Length > 3)
+        playerIdValue = playerId.GetComponentInChildren<TextMeshProUGUI>().text; 
+
+        if (playerGender.value != 0 && playerIdValue.Length > 3)
         {
             //open two CSV files to save the trial results and save the user profile data, also to save the user trajectory data when joining the group
             OpenCSVFiles();
@@ -322,9 +331,11 @@ public class GroupFormation : MonoBehaviour {
 
         ExpeConditions = new List<string>();
 
-        for (int i = 0; i < expCondRepeatNo; i++)
+        ExpeConditions.AddRange(CreateBalancedLatinSquareTrials());
+
+        if(NumberOfDemoRounds > 0)
         {
-            ExpeConditions.AddRange(CreateRandomisedListOfConditions());
+            demo = true;
         }
 
         Initialization();
@@ -401,20 +412,15 @@ public class GroupFormation : MonoBehaviour {
         gretaDelayWrappers[lateralAgent1Id].ClearAnimationQueue();
 
         //show trial questionnaire to the user
-        if (!demo)
-        {
-            tableMug.SetActive(false); //hide the mug on the table
-            trialHintsCanvas.SetActive(false); // hide trial hints canvas
-                                               //pointer.SetActive(true);
-            trialIdTextBoxEnd.text = trialStr;
-            timeTextBoxEnd.text = timeForTrial.ToString("0.00");
-            timePspaceEnd.text = timeForPspace.ToString("0.00");
-            questionnaireObject.SetActive(true);
 
-            //StopCoroutine(StartDiscussion(mainAgentId, 0, "Examples/DemoEN/CoffeeCup/FakeTalk1"));
-            //StopCoroutine(StartDiscussion(lateralAgent1Id, 0, "Examples/DemoEN/CoffeeCup/FakeTalk2"));
-        }
-        else
+        tableMug.SetActive(false); //hide the mug on the table
+        trialHintsCanvas.SetActive(false); // hide trial hints canvas
+                                            //pointer.SetActive(true);
+        trialIdTextBoxEnd.text = trialStr;
+        timeTextBoxEnd.text = timeForTrial.ToString("0.00");
+        timePspaceEnd.text = timeForPspace.ToString("0.00");
+
+        if (demo)
         {
             // give the user some trials to be familair with the environment only for two trials 
             if (trialIdNum >= NumberOfDemoRounds)
@@ -423,30 +429,24 @@ public class GroupFormation : MonoBehaviour {
                 trialIdNum = 0;
             }
 
-            //questionnaireObject.SetActive(true);
-            Initialization();
+            questionnaireDemo.SetActive(true);
+            questionnaireObject1.SetActive(false);
         }
 
-
-        //save the current trial values in the CSV file
-        //SaveTrialData2File();
-
-        //reload the next trial
-        //Initialization();
-
-        
+        endtrialUI.SetActive(true);
     }
 
     private void Initialization()
     {
-        //DominanceValue.value = 4;
-        FriendlinessValue.value = 4;
-        WheelValue = -1;
 
-        for (int i = 0; i < segmentButtons.Count; i++)
-        {
-            segmentButtons[i].thisButton.interactable = true;
-        }
+        ValenceParticipants.value = 4;
+        ValenceAgents.value = 4;
+        DominanceValue.value = 4;
+        FriendlinessOutValue.value = 4;
+        FriendlinessInValue.value = 4;
+
+        WheelValue = -1;
+        UnselectSegment();
 
         NextButton.interactable = false;
 
@@ -461,7 +461,11 @@ public class GroupFormation : MonoBehaviour {
         //if (trialId < 10)
         if (trialIdNum < ExpeConditions.Count)
         {
-            if (ForceScenario == null || ForceScenario.Length == 0)
+            if (demo)
+            {
+                trialStr = DemoStr;
+            }
+            else if (ForceScenario == null || ForceScenario.Length == 0)
             {
                 //New trial
                 trialStr = ExpeConditions[trialIdNum];
@@ -792,13 +796,13 @@ public class GroupFormation : MonoBehaviour {
     {
         Debug.Log("playerGender.value: " + playerGender.value);
         
-        if (playerId.GetComponentInChildren<TextMeshProUGUI>().text != "") 
+        if (playerIdValue != "") 
         {
             string datetimeSt = System.DateTime.Now.ToString("yyyy-dd-M--HH-mm-ss");
             //experiment file to save user profile and joinig point and questionnaire data
-            SWexpe = new StreamWriter(".//ExpeResults//Expe-" + playerId.GetComponentInChildren<TextMeshProUGUI>().text + "-" + datetimeSt + ".csv");
+            SWexpe = new StreamWriter(".//ExpeResults//Expe-" + playerIdValue + "-" + datetimeSt + ".csv");
             //trajectory file to save user trajectory to join the group
-            SWtrajectory = new StreamWriter(".//ExpeResults//Traj-" + playerId.GetComponentInChildren<TextMeshProUGUI>().text + "-" + datetimeSt + ".csv");
+            SWtrajectory = new StreamWriter(".//ExpeResults//Traj-" + playerIdValue + "-" + datetimeSt + ".csv");
 
             //save user profile data into expe file
             SavePlayerProfile2File(datetimeSt, SWexpe);
@@ -808,8 +812,14 @@ public class GroupFormation : MonoBehaviour {
             //save agents and group information to the trajectory file
             //SaveGroupData2TrajectoryFile();
 
+            Debug.Log("FriendlinessInValue: " + FriendlinessInValue.value);
+            Debug.Log("FriendlinessOutValue: " + FriendlinessOutValue.value);
+            Debug.Log("DominaceValue: " + DominanceValue.value);
+            Debug.Log("ValenceAgentsValue: " + ValenceAgents.value);
+            Debug.Log("ValenceParticipantsValue: " + ValenceParticipants.value);
+            Debug.Log("WheelValue: " + WheelValue);
             //create a header for the user results 
-            SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P, Spatial Presence, Engagement, Social Realism, Social Presence, Friendliness");
+            SWexpe.WriteLine("TRIAL,PLAYERID,GENDER,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P,ValenceParticipantsValue,ValenceAgentsValue,DominaceValue,FriendlinessInValue,FriendlinessOutValue,CircumplexValue");
 
             gameStartedFlag = true;
         }
@@ -848,7 +858,7 @@ public class GroupFormation : MonoBehaviour {
             Debug.Log(playerHandedness.options[playerHandedness.value].text);*/
 
         //save user profile data
-        sw.WriteLine("PLAYER ID" + "," + playerId.GetComponentInChildren<TextMeshProUGUI>().text);
+        sw.WriteLine("PLAYER ID" + "," + playerIdValue);
         //sw.WriteLine("PLAYER GENDER" + "," + playerGender.options[playerGender.value].text);
         sw.WriteLine("PLAYER GENDER" + "," + playerGender.value);
 
@@ -863,7 +873,9 @@ public class GroupFormation : MonoBehaviour {
         sw.WriteLine("EXPERIMENT START" + "," + dateTime);
         sw.WriteLine("-");
         sw.WriteLine("TRIAL DATA");
-        sw.WriteLine("-"); 
+        sw.WriteLine("-");
+
+        Debug.Log("Profile SAVEDD!");
     }
 
     //save agents and group position and rotation and forward dirction into the trajectory file
@@ -904,6 +916,42 @@ public class GroupFormation : MonoBehaviour {
         SWtrajectory.WriteLine("PLAYER Pos X,PLAYER Pos Y,PLAYER Pos Z,PLAYER Rot X,PLAYER Rot Y,PLAYER Rot Z,PLAYER Forward X,PLAYER Forward Y,PLAYER Forward Z");
     }
 
+    //Show circumplex question
+    public void ShowNext()
+    {
+        questionnaireDemo.SetActive(false);
+        questionnaireObject1.SetActive(false);
+        questionnaireObject2.SetActive(true);
+    }
+
+    //save each trial values into the CSV files (joining points + questionnaire + trajectory) called from submit button on the questionnaire UI form
+    public void DemoSubmit()
+    {
+        //reinitializing all the lists related to the trajectory
+        Walking.userPosX.Clear();
+        Walking.userPosY.Clear();
+        Walking.userPosZ.Clear();
+        Walking.userRotX.Clear();
+        Walking.userRotY.Clear();
+        Walking.userRotZ.Clear();
+        Walking.userForwardX.Clear();
+        Walking.userForwardY.Clear();
+        Walking.userForwardZ.Clear();
+
+        //Disactivate the questionnaire form and the left controller pointer and show the coffee cup on table again
+        endtrialUI.SetActive(false);
+        questionnaireDemo.SetActive(false);
+        questionnaireObject1.SetActive(true);
+        questionnaireObject2.SetActive(false);
+        tableMug.SetActive(true); //show the mug on the table
+        trialHintsCanvas.SetActive(true); // show trial hints canvas
+                                          //if (trialId != 18) pointer.SetActive(false);
+
+        //reload the next trial
+        Initialization();
+    }
+
+
     //save each trial values into the CSV files (joining points + questionnaire + trajectory) called from submit button on the questionnaire UI form
     public void SaveTrialData2File()
     {
@@ -918,13 +966,19 @@ public class GroupFormation : MonoBehaviour {
         int lateralAg1 = lateralAgent1Id + 1;
         int mainAg = mainAgentId + 1;
 
-        Debug.Log("FriendlinessValue: " + FriendlinessValue.value);
+        Debug.Log("WheelValue: " + WheelValue);
+        Debug.Log("FriendlinessOutValue: " + FriendlinessOutValue.value);
+        Debug.Log("FriendlinessInValue: " + FriendlinessInValue.value);
+        Debug.Log("DominaceValue: " + DominanceValue.value);
+        Debug.Log("ValenceAgentsValue: " + ValenceAgents.value);
+        Debug.Log("ValenceParticipantsValue: " + ValenceParticipants.value);
+
 
         timeForPspace = hitPspace ? timeForPspace : -1;
 
-        //SWexpe.WriteLine("TRIAL,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P, Spatial Presence, Engagement, Social Realism, Social Presence, Friendliness");
+        //SWexpe.WriteLine("TRIAL,PLAYERID,GENDER,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P,ValenceParticipantsValue,ValenceAgentsValue,DominaceValue,FriendlinessInValue,FriendlinessOutValue,CircumplexValue"); 
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialIdNum + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ "" + "" + "," + "" + "," + "" + "," + "" + "," + FriendlinessValue.value);
+        SWexpe.WriteLine(trialIdNum + "," + playerIdValue + "," + playerGender.value + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ ValenceParticipants.value + "," + ValenceAgents.value + "," + DominanceValue.value + "," + FriendlinessOutValue.value + "," + FriendlinessInValue.value + "," + WheelValue);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -944,7 +998,9 @@ public class GroupFormation : MonoBehaviour {
         Walking.userForwardZ.Clear();
 
         //Disactivate the questionnaire form and the left controller pointer and show the coffee cup on table again
-        questionnaireObject.SetActive(false);
+        endtrialUI.SetActive(false);
+        questionnaireObject1.SetActive(true);
+        questionnaireObject2.SetActive(false);
         tableMug.SetActive(true); //show the mug on the table
         trialHintsCanvas.SetActive(true); // show trial hints canvas
         //if (trialId != 18) pointer.SetActive(false);
@@ -957,11 +1013,6 @@ public class GroupFormation : MonoBehaviour {
     {
         // close the CSV file
         Application.Quit();
-    }
-
-    public void startButtonClick()
-    {
-        hintsWindow.SetActive(false);
     }
 
     /* Read the list of conditions then shuffel them */
@@ -1008,7 +1059,7 @@ public class GroupFormation : MonoBehaviour {
     }
 
 
-    /* provide the latin square for a 6-trial experiment. It will open the "Assets\Resources\BalancedLatinSquare.csv" file and read the current row based on the "latinSquareRowToFetch". 
+    /* provide the latin square for a 7-trial experiment. It will open the "Assets\Resources\BalancedLatinSquare.csv" file and read the current row based on the "latinSquareRowToFetch". 
     * Then it will repeat the fetched row based on the "expCondRepeatNo" and create the trials of the experiment. 
     * */
     private List<string> CreateBalancedLatinSquareTrials()
@@ -1025,7 +1076,7 @@ public class GroupFormation : MonoBehaviour {
             for (int i = 0; i < expCondRepeatNo; i++)
             {
                 //the interesting row to be repeated
-                string[] row = data[latinSquareRowToFetch].Split(new char[] { ',' });
+                string[] row = data[latinSquareRowToFetch].TrimEnd('\r', '\n').Split(new char[] { ',' });
 
                 //Debug.Log("rowdata: " + data[i].ToString());
 
@@ -1080,15 +1131,17 @@ public class GroupFormation : MonoBehaviour {
             Debug.Log("latin Square Row To Fetch: " + latinSquareRowToFetch);
             stRead.Close();
 
-            //increase the row number to use it in the current experiment and save it to know what row has been used (it is a 9 row matrix so the number should be between 0-8)
+            SWexpe.WriteLine("LATIN SQUARE ROW" + "," + latinSquareRowToFetch);
+            SWtrajectory.WriteLine("LATIN SQUARE ROW" + "," + latinSquareRowToFetch);
+
+            //increase the row number to use it in the current experiment and save it to know what row has been used (it is a 7 row matrix so the number should be between 0-6)
             StreamWriter stWrite = new StreamWriter(".//Assets//Resources//RowToRead.csv");
             latinSquareRowToFetch++;
-            latinSquareRowToFetch %= 9;
+            latinSquareRowToFetch %= 7;
             stWrite.WriteLine(latinSquareRowToFetch);
             stWrite.Close();
 
-            SWexpe.WriteLine("LATIN SQUARE ROW" + "," + latinSquareRowToFetch);
-            SWtrajectory.WriteLine("LATIN SQUARE ROW" + "," + latinSquareRowToFetch);
+
         }
     }
 
@@ -1144,5 +1197,14 @@ public class GroupFormation : MonoBehaviour {
     public void EnteredPspace()
     {
         hitPspace = true;
+    }
+
+    public void UnselectSegment()
+    {
+        if (selectedSegmentButton != null)
+        {
+            selectedSegmentButton.thisButton.interactable = true;
+            selectedSegmentButton = null;
+        }
     }
 }

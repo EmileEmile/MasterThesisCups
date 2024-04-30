@@ -11,32 +11,23 @@ public class SegmentButton : MonoBehaviour
 
     private List<SegmentButton> segments;
     private GroupFormation groupFormation;
-    SegmentButton selectedSegment;
     public Button thisButton;
 
-    private void Start()
+    
+    void Start()
     {
         segments = new List<SegmentButton> (FindObjectsOfType<SegmentButton>());
         groupFormation = FindFirstObjectByType<GroupFormation>();
-        thisButton = this.GetComponent<Button>();
     }
 
     public void SegmentClicked ()
     {
         thisButton.interactable = false;
-
-        if (selectedSegment != null)
-        {
-            selectedSegment.thisButton.interactable = true;
-        }
+        groupFormation.UnselectSegment();
 
         NextButton.interactable = true;
 
         groupFormation.WheelValue = ButtonID;
-
-        for (int i = 0; i < segments.Count; i++)
-        {
-            segments[i].selectedSegment = this;
-        }
+        groupFormation.selectedSegmentButton = this;
     }
 }
