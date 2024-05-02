@@ -135,7 +135,6 @@ public class GroupFormation : MonoBehaviour {
     public bool DisableTeleport = false;
     public bool demo;
     bool trialOngoing = false;
-    public int experimentConditionsNo;//numebr of all unique conditions of a variable (eg. 4 distnaces between agents)
     public int NumberOfDemoRounds = 2;//numebr of demo trials
     public int expCondRepeatNo;//number of repetition of conditions in each experiment (eg. 2, will create 8 trials)    
     //indicates the row to be fetched in the balanced latin square csv file to create the trials (ex. 0..3)
@@ -482,7 +481,7 @@ public class GroupFormation : MonoBehaviour {
 
             //display trial number only when not in demo
             if (!demo)
-                trialIdTextBox.text = trialIdNum.ToString() + "/" + (expCondRepeatNo * experimentConditionsNo).ToString();
+                trialIdTextBox.text = trialIdNum.ToString() + "/" + (ExpeConditions.Count).ToString();
             else
                 trialIdTextBox.text = "demo";
 
