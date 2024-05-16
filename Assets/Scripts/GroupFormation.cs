@@ -219,9 +219,11 @@ public class GroupFormation : MonoBehaviour {
 
     private CapsuleCollider myCollider;
 
+    private bool returnedCup = false;
     private bool hitPspace = false;
 
     private float timeForTrial;
+    private float timeForReturnCup;
     private float timeForPspace;
 
     //Hack to set body position
@@ -377,6 +379,12 @@ public class GroupFormation : MonoBehaviour {
 
         timeForTrial += Time.deltaTime;
 
+        if (!returnedCup)
+        {
+            timeForReturnCup += Time.deltaTime;
+        }
+
+
         if (!hitPspace)
         {
             timeForPspace += Time.deltaTime;
@@ -406,6 +414,8 @@ public class GroupFormation : MonoBehaviour {
         trialOngoing = false;
 
         AudioListener.volume = 0.0f;
+
+        returnedCup = true;
 
         gretaDelayWrappers[mainAgentId].ClearAnimationQueue();
         gretaDelayWrappers[lateralAgent1Id].ClearAnimationQueue();
@@ -450,9 +460,11 @@ public class GroupFormation : MonoBehaviour {
         NextButton.interactable = false;
 
         timeForTrial = 0;
+        timeForReturnCup = 0;
         timeForPspace = 0;
 
         hitPspace = false;
+        returnedCup = false;
 
         AudioListener.volume = AudioStartVolume;
 
@@ -818,7 +830,7 @@ public class GroupFormation : MonoBehaviour {
             Debug.Log("ValenceParticipantsValue: " + ValenceParticipants.value);
             Debug.Log("WheelValue: " + WheelValue);
             //create a header for the user results 
-            SWexpe.WriteLine("TRIAL,PLAYERID,GENDER,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P,ValenceParticipantsValue,ValenceAgentsValue,DominaceValue,FriendlinessInValue,FriendlinessOutValue,CircumplexValue");
+            SWexpe.WriteLine("TRIAL,PLAYERID,GENDER,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P,ValenceParticipantsValue,ValenceAgentsValue,DominaceValue,FriendlinessInValue,FriendlinessOutValue,CircumplexValue,CupTime");
 
             gameStartedFlag = true;
         }
@@ -840,6 +852,13 @@ public class GroupFormation : MonoBehaviour {
 
             if (SWtrajectory.BaseStream != null)
                 SWtrajectory.Close();
+
+            //increase the row number to use it in the current experiment and save it to know what row has been used (it is a 7 row matrix so the number should be between 0-6)
+            StreamWriter stWrite = new StreamWriter(".//Assets//Resources//RowToRead.csv");
+            latinSquareRowToFetch++;
+            latinSquareRowToFetch %= 6;
+            stWrite.WriteLine(latinSquareRowToFetch);
+            stWrite.Close();
         }
         catch (System.Exception e)
         {
@@ -977,7 +996,7 @@ public class GroupFormation : MonoBehaviour {
 
         //SWexpe.WriteLine("TRIAL,PLAYERID,GENDER,CONDITION,SECONDARY AGENT,MAIN AGENT,TIME TRIAL,TIME P,ValenceParticipantsValue,ValenceAgentsValue,DominaceValue,FriendlinessInValue,FriendlinessOutValue,CircumplexValue"); 
         //save experiment joinig point and questionnaire data to file
-        SWexpe.WriteLine(trialIdNum + "," + playerIdValue + "," + playerGender.value + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ ValenceParticipants.value + "," + ValenceAgents.value + "," + DominanceValue.value + "," + FriendlinessOutValue.value + "," + FriendlinessInValue.value + "," + WheelValue);
+        SWexpe.WriteLine(trialIdNum + "," + playerIdValue + "," + playerGender.value + "," + trialStr + "," + lateralAg1 + "," + mainAg + "," + timeForTrial + "," + timeForPspace +","+ ValenceParticipants.value + "," + ValenceAgents.value + "," + DominanceValue.value + "," + FriendlinessOutValue.value + "," + FriendlinessInValue.value + "," + WheelValue + "," + timeForReturnCup);
 
         //save agents and group information into the trajectory file
         SaveGroupData2TrajectoryFile();
@@ -1132,13 +1151,6 @@ public class GroupFormation : MonoBehaviour {
 
             SWexpe.WriteLine("LATIN SQUARE ROW" + "," + latinSquareRowToFetch);
             SWtrajectory.WriteLine("LATIN SQUARE ROW" + "," + latinSquareRowToFetch);
-
-            //increase the row number to use it in the current experiment and save it to know what row has been used (it is a 7 row matrix so the number should be between 0-6)
-            StreamWriter stWrite = new StreamWriter(".//Assets//Resources//RowToRead.csv");
-            latinSquareRowToFetch++;
-            latinSquareRowToFetch %= 7;
-            stWrite.WriteLine(latinSquareRowToFetch);
-            stWrite.Close();
 
 
         }
